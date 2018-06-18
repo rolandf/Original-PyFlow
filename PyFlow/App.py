@@ -5,25 +5,22 @@ from Qt import QtCore
 from Qt import QtWidgets
 from Qt.QtWidgets import QMainWindow
 from Qt.QtWidgets import QApplication
-from Qt.QtWidgets import QStyleFactory
-from Qt.QtWidgets import QTextEdit
+from Qt.QtCore import QCoreApplication
 from Qt.QtWidgets import QMessageBox
-from Qt.QtWidgets import QAction
 from Qt.QtWidgets import QInputDialog
-from Qt.QtWidgets import QHBoxLayout
 from Qt.QtWidgets import QUndoView
 from Core.Widget import GraphWidget
 from Core.Widget import Direction
-from Core.Widget import NodesBox
 from Core.VariablesWidget import VariablesWidget
 import Nodes
 import Commands
 import FunctionLibraries
 import Pins
 from Ui import GraphEditor_ui
-import json
 from time import clock
 
+from stylesheet import editableStyleSheet
+from Ui.StyleSheetEditor import StyleSheetEditor
 
 FILE_DIR = path.dirname(__file__)
 SETTINGS_PATH = FILE_DIR + "/appConfig.ini"
@@ -255,6 +252,7 @@ class PyFlow(QMainWindow, GraphEditor_ui.Ui_MainWindow):
         self.actionNew_pin.triggered.connect(lambda: self.newPlugin(PluginType.pPin))
         self.actionHistory.triggered.connect(self.toggleHistory)
         self.actionNew.triggered.connect(self.G.new_file)
+        self.actionEdit_Theme.triggered.connect(self.editTheme)
         self.dockWidgetUndoStack.setVisible(False)
 
         self.setMouseTracking(True)
@@ -266,6 +264,22 @@ class PyFlow(QMainWindow, GraphEditor_ui.Ui_MainWindow):
         self.fps = EDITOR_TARGET_FPS
         self.tick_timer = QtCore.QTimer()
         self.tick_timer.timeout.connect(self.mainLoop)
+
+
+        self.styleSheetEditorUi = StyleSheetEditor()
+        self.styleSheetEditorUi.Updated.connect(self.updateStyle)
+
+        QApp = QCoreApplication.instance()    
+        
+        QApp.setStyleSheet( self.styleSheetEditorUi.getStyleSheet() )
+
+    def editTheme(self):
+        self.styleSheetEditorUi.show()
+
+    def updateStyle(self)   : 
+        if self.styleSheetEditorUi:
+            QApp = QCoreApplication.instance()
+            QApp.setStyleSheet( self.styleSheetEditorUi.getStyleSheet() )     
 
     def startMainLoop(self):
         self.tick_timer.start(1000 / EDITOR_TARGET_FPS)
@@ -354,6 +368,7 @@ class PyFlow(QMainWindow, GraphEditor_ui.Ui_MainWindow):
         reload(Nodes)
         Nodes._getClasses()
         FunctionLibraries._getFunctions()
+
 
 
 if __name__ == '__main__':
