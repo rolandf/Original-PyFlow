@@ -23,6 +23,7 @@ class pythonNode(Node, NodeBase):
         self.bKillEditor = True
         self.label().icon = QtGui.QImage(':/icons/resources/py.png')
         self.currentComputeCode = Node.jsonTemplate()['computeCode']
+        self.color = Colors.NodeNameRect
 
     @staticmethod
     def pinTypeHints():

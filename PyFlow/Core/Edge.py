@@ -103,6 +103,7 @@ class Edge(QGraphicsPathItem):
         self.update()
 
     def getEndPoints(self):
+        
         p1 = self.source().boundingRect().center() + self.source().scenePos()
         p2 = self.destination().boundingRect().center() + self.destination().scenePos()
         return p1, p2
@@ -155,7 +156,6 @@ class Edge(QGraphicsPathItem):
     def paint(self, painter, option, widget):
         self.setPen(self.pen)
         p1, p2 = self.getEndPoints()
-
         xDistance = p2.x() - p1.x()
         vDistance = p2.y() - p1.y()
 

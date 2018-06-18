@@ -1,8 +1,11 @@
 from Qt import QtCore
 from Qt import QtGui
+
+from Qt.QtGui import QMouseEvent
 from Qt.QtWidgets import QGraphicsScene
 from Qt.QtWidgets import QAbstractItemView
 from Qt.QtWidgets import QGraphicsProxyWidget
+from Qt.QtWidgets import QGraphicsWidget
 from Qt.QtWidgets import QFileDialog
 from Qt.QtWidgets import QListWidget
 from Qt.QtWidgets import QFrame
@@ -36,6 +39,8 @@ from Node import Node
 from Node import NodeName
 from GetVarNode import GetVarNode
 from SetVarNode import SetVarNode
+from SelectionRect import SelectionRect
+
 from .. import Commands
 from .. import FunctionLibraries
 from .. import Nodes
@@ -45,7 +50,7 @@ from .Variable import VariableBase
 from time import ctime
 import json
 import re
-
+import ast
 
 def clearLayout(layout):
     while layout.count():
@@ -150,7 +155,7 @@ class SceneClass(QGraphicsScene):
     def mousePressEvent(self, event):
         # do not clear selection when panning
         modifiers = event.modifiers()
-        if event.button() == QtCore.Qt.RightButton or modifiers == QtCore.Qt.ShiftModifier:
+        if event.button() == QtCore.Qt.RightButton:# or modifiers == QtCore.Qt.ShiftModifier:
             event.accept()
             return
         QGraphicsScene.mousePressEvent(self, event)
@@ -434,6 +439,7 @@ class NodesBox(QWidget):
         self.verticalLayout.addWidget(self.treeWidget)
         self.lineEdit.textChanged.connect(self.leTextChanged)
         self.treeWidget.refresh()
+        self.installEventFilter(self)
 
     def sizeHint(self):
         return QtCore.QSize(400, 250)
@@ -449,9 +455,42 @@ class NodesBox(QWidget):
             return
         self.treeWidget.refresh(None, self.lineEdit.text())
         self.expandCategory()
+        
+
+    def eventFilter(self, object, event):
+        if event.type() == QtCore.QEvent.WindowActivate:
+            pass
+            #print "widget window has gained focus"
+        elif event.type()== QtCore.QEvent.WindowDeactivate:
+            self.hide()
+        elif event.type()== QtCore.QEvent.FocusIn:
+            pass
+            #print "widget has gained keyboard focus"
+        elif event.type()== QtCore.QEvent.FocusOut:
+            pass
+            #print "widget has lost keyboard focus"
 
 
+        return False
+
+MANIP_MODE_NONE = 0
+MANIP_MODE_SELECT = 1
+MANIP_MODE_PAN = 2
+MANIP_MODE_MOVE = 3
+MANIP_MODE_ZOOM = 4
+from Qt.QtWidgets import QGraphicsLinearLayout
 class GraphWidget(QGraphicsView, Graph):
+
+    _manipulationMode = MANIP_MODE_NONE
+
+    _backgroundColor = Colors.SceneBackground #QtGui.QColor(50, 50, 50)
+    _gridPenS = Colors.GridColor
+    _gridPenL = Colors.GridColorDarker
+    _gridSizeFine = 30
+    _gridSizeCourse = 300
+
+    _mouseWheelZoomRate = 0.0005
+
     def __init__(self, name, parent=None):
         super(GraphWidget, self).__init__()
         Graph.__init__(self, name)
@@ -476,12 +515,18 @@ class GraphWidget(QGraphicsView, Graph):
         self.maximum_scale = 2.0
         self.setViewportUpdateMode(self.FullViewportUpdate)
         self.setCacheMode(QGraphicsView.CacheBackground)
+
         self.setRenderHint(QtGui.QPainter.Antialiasing)
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
         self.setAcceptDrops(True)
         self.setAttribute(QtCore.Qt.WA_AlwaysShowToolTips)
-        self.setResizeAnchor(QGraphicsView.AnchorViewCenter)
-        self.scene().setSceneRect(QtCore.QRect(0, 0, 10000, 10000))
+        self.setResizeAnchor(QGraphicsView.AnchorUnderMouse)
+
+        self.setRenderHint(QtGui.QPainter.Antialiasing)
+        self.setRenderHint(QtGui.QPainter.TextAntialiasing)
+
+        #self.scene().setSceneRect(QtCore.QRect(0, 0, 10000, 10000))
+        self.scene().setSceneRect(QtCore.QRectF(0, 0, 10, 10))
         self._grid_spacing = 50
         self.factor = 1
         self.factor_diff = 0
@@ -501,7 +546,7 @@ class GraphWidget(QGraphicsView, Graph):
 
         self.real_time_line.name = 'RealTimeLine'
         self.real_time_line.setPen(QtGui.QPen(Colors.Green, 1.0, QtCore.Qt.DashLine))
-        self.mousePressPose = QtCore.QPointF(0, 0)
+        self.mousePressPose = QtCore.QPoint(0, 0)
         self.mousePos = QtCore.QPointF(0, 0)
         self._lastMousePos = QtCore.QPointF(0, 0)
         self._right_button = False
@@ -528,10 +573,16 @@ class GraphWidget(QGraphicsView, Graph):
         self.codeEditors = {}
         self.nodesMoveInfo = {}
 
+        self.boundingRect = self.rect()
+        self.addInputNode()
+
+        self.installEventFilter(self)
+
     def showNodeBox(self, dataType=None, pinType=None):
         self.node_box.show()
         self.node_box.move(QtGui.QCursor.pos())
         self.node_box.treeWidget.refresh(dataType, '', pinType)
+        self.node_box.lineEdit.setText("")
         if dataType is None:
             self.node_box.lineEdit.setFocus()
 
@@ -564,8 +615,8 @@ class GraphWidget(QGraphicsView, Graph):
         event.accept()
 
     def OnDoubleClick(self, pos):
-        pass
-
+        
+        #print self.pressed_item.__class__
         if self.pressed_item and isinstance(self.pressed_item, NodeName):
             if self.pressed_item.IsRenamable():
                 name, result = QInputDialog.getText(self, "New name dialog", "Enter new name:")
@@ -583,8 +634,8 @@ class GraphWidget(QGraphicsView, Graph):
             pin.highlight()
 
     def Tick(self, deltaTime):
-        if self.autoPanController.isActive():
-            self.moveScrollbar(self.autoPanController.getDelta())
+        #if self.autoPanController.isActive():
+        #    self.moveScrollbar(self.autoPanController.getDelta())
         for n in self.getNodes():
             n.Tick(deltaTime)
         for e in self.edges.values():
@@ -597,10 +648,10 @@ class GraphWidget(QGraphicsView, Graph):
     def screenShot(self):
         name_filter = "Image (*.png)"
         fName = QFileDialog.getSaveFileName(filter=name_filter)
-        if not fName[0] == '':
-            print("save screen to {0}".format(fName[0]))
+        if not fName == '':
+            print("save screen to {0}".format(fName))
             img = QtGui.QPixmap.grabWidget(self)
-            img.save(fName[0], quality=100)
+            img.save(fName, quality=100)
 
     def isShortcutsEnabled(self):
         return self._sortcuts_enabled
@@ -632,16 +683,16 @@ class GraphWidget(QGraphicsView, Graph):
         if save_as:
             name_filter = "Graph files (*.json)"
             pth = QFileDialog.getSaveFileName(filter=name_filter)
-            if not pth[0] == '':
-                self._current_file_name = pth[0]
+            if not pth == '':
+                self._current_file_name = pth
             else:
                 self._current_file_name = "Untitled"
         else:
             if not path.isfile(self._current_file_name):
                 name_filter = "Graph files (*.json)"
                 pth = QFileDialog.getSaveFileName(filter=name_filter)
-                if not pth[0] == '':
-                    self._current_file_name = pth[0]
+                if not pth == '':
+                    self._current_file_name = pth
                 else:
                     self._current_file_name = "Untitled"
 
@@ -651,7 +702,12 @@ class GraphWidget(QGraphicsView, Graph):
         if not self._current_file_name == '':
             with open(self._current_file_name, 'w') as f:
                 graphData = self.getGraphSaveData()
-                json.dump(graphData, f)
+                def to_serializable(val):
+                    return {
+                        "name": None
+                    }
+                    return str(val)                
+                json.dump(graphData, f,skipkeys=True,default=to_serializable)
 
             self._file_name_label.setPlainText(self._current_file_name)
             print(str("// saved: '{0}'".format(self._current_file_name)))
@@ -659,6 +715,12 @@ class GraphWidget(QGraphicsView, Graph):
     def save_as(self):
         self.save(True)
 
+    def addInputNode(self):
+        #self.inputsItem = Node("__scene_inputs__",self)
+        self.inputsItem = getNodeInstance(Nodes, "scene_inputs", "__scene_inputs__", self)
+        Graph.addNode(self, self.inputsItem, {"x":0,"y":0})
+        self.scene().addItem(self.inputsItem)
+      
     def new_file(self):
         self._current_file_name = 'Untitled'
         self._file_name_label.setPlainText('Untitled')
@@ -668,28 +730,41 @@ class GraphWidget(QGraphicsView, Graph):
         self.parent.variablesWidget.listWidget.clear()
         self.undoStack.clear()
         self._clearPropertiesView()
+        self.addInputNode()
 
     def load(self):
         name_filter = "Graph files (*.json)"
-        fpath = QFileDialog.getOpenFileName(filter=name_filter, dir="./Examples")
-        if not fpath[0] == '':
-            with open(fpath[0], 'r') as f:
+        fpath = QFileDialog.getOpenFileName(filter=name_filter)
+        if not fpath == '':
+            with open(fpath, 'r') as f:
                 data = json.load(f)
                 self.new_file()
                 # vars
                 for varJson in data[self.name]['variables']:
-                    VariableBase.deserialize(varJson, self)
+                    try:
+                        VariableBase.deserialize(varJson, self)
+                    except Exception as e:
+                        print(varJson)
+                        print(e)                           
                 # nodes
                 for nodeJson in data[self.name]['nodes']:
                     try:
-                        Node.deserialize(nodeJson, self)
+                        if nodeJson["name"] != "__scene_inputs__":
+                            Node.deserialize(nodeJson, self)
+                        else:
+                            self.inputsItem.kill()
+                            self.inputsItem = Node.deserialize(nodeJson, self)
                     except Exception as e:
                         print(nodeJson)
                         print(e)
                 # edges
                 for edgeJson in data[self.name]['edges']:
-                    Edge.deserialize(edgeJson, self)
-                self._current_file_name = fpath[0]
+                    try:
+                        Edge.deserialize(edgeJson, self)
+                    except Exception as e:
+                        print(edgeJson)
+                        print(e)                        
+                self._current_file_name = fpath
                 self._file_name_label.setPlainText(self._current_file_name)
                 self.frame()
                 self.undoStack.clear()
@@ -799,10 +874,6 @@ class GraphWidget(QGraphicsView, Graph):
         if all([event.key() == QtCore.Qt.Key_Y, modifiers == QtCore.Qt.ControlModifier]):
             if self.isShortcutsEnabled():
                 self.undoStack.redo()
-        if all([event.key() == QtCore.Qt.Key_Equal, modifiers == QtCore.Qt.ControlModifier]):
-            self.zoomDelta(True)
-        if all([event.key() == QtCore.Qt.Key_Minus, modifiers == QtCore.Qt.ControlModifier]):
-            self.zoomDelta(False)
         if all([event.key() == QtCore.Qt.Key_R, modifiers == QtCore.Qt.ControlModifier]):
             self.reset_scale()
         if all([event.key() == QtCore.Qt.Key_S, modifiers == QtCore.Qt.ControlModifier]):
@@ -813,19 +884,14 @@ class GraphWidget(QGraphicsView, Graph):
             self.save_as()
         if all([event.key() == QtCore.Qt.Key_F, modifiers == QtCore.Qt.ControlModifier]):
             self.frame()
-        if all([event.key() == QtCore.Qt.Key_N, modifiers == QtCore.Qt.ControlModifier | QtCore.Qt.ShiftModifier]):
-            if self.parent:
-                self.parent.toggle_node_box()
-        if all([event.key() == QtCore.Qt.Key_M, modifiers == QtCore.Qt.ControlModifier | QtCore.Qt.AltModifier]):
-            self.parent.toggle_multithreaded()
-        if all([event.key() == QtCore.Qt.Key_D, modifiers == QtCore.Qt.ControlModifier | QtCore.Qt.AltModifier]):
-            self.parent.toggle_debug()
-        if all([event.key() == QtCore.Qt.Key_P, modifiers == QtCore.Qt.ControlModifier | QtCore.Qt.ShiftModifier]):
-            self.parent.toggle_property_view()
         if event.key() == QtCore.Qt.Key_Delete:
             self.killSelectedNodes()
-        if all([event.key() == QtCore.Qt.Key_W, modifiers == QtCore.Qt.ControlModifier]):
+        if all([event.key() == QtCore.Qt.Key_D, modifiers == QtCore.Qt.ControlModifier]):
             self.duplicateNodes()
+        if all([event.key() == QtCore.Qt.Key_C, modifiers == QtCore.Qt.ControlModifier]):
+            self.copyNodes()
+        if all([event.key() == QtCore.Qt.Key_V, modifiers == QtCore.Qt.ControlModifier]):
+            self.pasteNodes()
         QGraphicsView.keyPressEvent(self, event)
 
     def duplicateNodes(self):
@@ -833,13 +899,89 @@ class GraphWidget(QGraphicsView, Graph):
 
         if len(selectedNodes) > 0:
             diff = QtCore.QPointF(self.mapToScene(self.mousePos)) - selectedNodes[0].scenePos()
-
+            newNodes = []
+            oldNodes = []
+            edges = []
             for n in selectedNodes:
                 new_node = n.clone()
                 n.setSelected(False)
                 new_node.setSelected(True)
                 new_node.setPos(new_node.scenePos() + diff)
+                newNodes.append(new_node)
+                oldNodes.append(n)
+                for i in n.inputs.values()+n.outputs.values():
+                    edges += i.edge_list                
+            
+            for e in edges:
+                if e.source().parent() in oldNodes and e.destination().parent() in oldNodes:
+                    nsrc =  newNodes[oldNodes.index(e.source().parent())].getPinByName(e.source().name)
+                    ndst =  newNodes[oldNodes.index(e.destination().parent())].getPinByName(e.destination().name)
+                    self.addEdge(nsrc,ndst)
+                elif e.source().parent() not in oldNodes and e.source().dataType != DataTypes.Exec:
+                    nsrc =  e.source()
+                    ndst =  newNodes[oldNodes.index(e.destination().parent())].getPinByName(e.destination().name)
+                    self.addEdge(nsrc,ndst)           
 
+    def copyNodes(self):
+        QApplication.clipboard().clear()
+        nodes = []
+        oldNodes = []
+        selectedNodes = [i for i in self.getNodes() if i.isSelected()]
+        edges = []
+        for n in selectedNodes:
+            oldNodes.append(n)
+            nodes.append(n.serialize())
+            for i in n.inputs.values()+n.outputs.values():
+                edges += i.edge_list
+        fullEdges = []
+        for e in edges:
+            if e.source().parent() in oldNodes and e.destination().parent() in oldNodes:
+                fullEdges.append({"full":True,"sourcenode":e.source().parent().name,"sourcePin":e.source().name,"destinationNode":e.destination().parent().name,"destinationPin":e.destination().name})
+            elif e.source().parent() not in oldNodes and e.source().dataType != DataTypes.Exec:
+                fullEdges.append({"full":False,"sourcenode":e.source().parent().name,"sourcePin":e.source().name,"destinationNode":e.destination().parent().name,"destinationPin":e.destination().name})
+        ret = {"nodes":nodes,"edges":fullEdges}             
+
+        QApplication.clipboard().setText(str(ret))
+
+    def pasteNodes(self):
+        
+        try:
+            nodes = ast.literal_eval(QApplication.clipboard().text())
+            if not nodes.has_key("nodes") or not nodes.has_key("edges"):
+                return
+        except:
+            return
+        diff = QtCore.QPointF(self.mapToScene(self.mousePos)) - QtCore.QPointF(nodes["nodes"][0]["x"],nodes["nodes"][0]["y"])
+        self.clearSelection()
+        newNodes = {}
+
+        for node in nodes["nodes"]:
+            oldName = node["name"]
+            node["name"] = self.getUniqNodeName(node["name"])
+            node['uuid'] = str(uuid.uuid4())
+            for inp in node['inputs']:
+                inp['uuid'] = str(uuid.uuid4())
+            for out in node['outputs']:
+                out['uuid'] = str(uuid.uuid4())            
+            n = self.createNode(node)
+            newNodes[oldName]=n
+            n.setSelected(True)
+            n.setPos(n.scenePos() + diff)
+        for edge in nodes["edges"]:
+            if edge["full"]:
+                nsrc = newNodes[edge["sourcenode"]].getPinByName(edge["sourcePin"])
+                ndst = newNodes[edge["destinationNode"]].getPinByName(edge["destinationPin"])
+                self.addEdge(nsrc,ndst)
+            else:
+                nsrc = self.getNodeByName(edge["sourcenode"])
+                if nsrc != None:
+                    nsrc = nsrc.getPinByName(edge["sourcePin"])
+                    if nsrc != None:
+                        ndst = newNodes[edge["destinationNode"]].getPinByName(edge["destinationPin"])
+                        self.addEdge(nsrc,ndst)
+
+
+        
     def alignSelectedNodes(self, direction):
         ls = [n for n in self.getNodes() if n.isSelected()]
         nodesMoveInfo = {}
@@ -900,54 +1042,101 @@ class GraphWidget(QGraphicsView, Graph):
     def keyReleaseEvent(self, event):
         QGraphicsView.keyReleaseEvent(self, event)
 
-    def mousePressEvent(self, event):
-        super(GraphWidget, self).mousePressEvent(event)
-        self.pressed_item = self.itemAt(event.pos())
-        self.mousePressPose = event.pos()
-        if not isinstance(self.pressed_item, NodesBox) and self.node_box.isVisible():
-            self.node_box.hide()
-            self.node_box.lineEdit.clear()
-
-        modifiers = event.modifiers()
-
-        if self.pressed_item and isinstance(self.pressed_item, QGraphicsItem):
-            self.autoPanController.start()
-            if isinstance(self.pressed_item, PinBase):
-                if event.button() == QtCore.Qt.LeftButton:
-                    self.pressed_item.parent().setFlag(QGraphicsItem.ItemIsMovable, False)
-                    self.pressed_item.parent().setFlag(QGraphicsItem.ItemIsSelectable, False)
-                    self._draw_real_time_line = True
-                if modifiers == QtCore.Qt.AltModifier:
-                    self.removeEdgeCmd(self.pressed_item.edge_list)
-            else:
-                self.pressed_item.setSelected(True)
-
-        if not self.pressed_item:
-            if event.button() == QtCore.Qt.LeftButton:
-                self._is_rubber_band_selection = True
-            if event.button() == QtCore.Qt.RightButton and modifiers == QtCore.Qt.NoModifier:
-                self.bPanMode = True
-            self.initialScrollBarsPos = QtGui.QVector2D(self.horizontalScrollBar().value(), self.verticalScrollBar().value())
-
-        selectedNodes = self.selectedNodes()
-        if len(selectedNodes) > 0:
-            self.nodesMoveInfo.clear()
-            for n in self.getNodes():
-                self.nodesMoveInfo[n.uid] = {'from': n.scenePos(), 'to': None}
-
     def pan(self, delta):
-        delta *= self._scale * -1
-        delta *= self._panSpeed
-        self.horizontalScrollBar().setValue(self.horizontalScrollBar().value() + delta.x())
-        self.verticalScrollBar().setValue(self.verticalScrollBar().value() + delta.y())
+        rect = self.sceneRect()
+        rect.translate(-delta.x(), -delta.y())
+        self.setSceneRect(rect)
+
+    def nodeFromInstance(self,instance):
+        if isinstance(instance,Node):
+            return instance
+        node = instance
+        while  (isinstance(node, QGraphicsItem) or isinstance(node, QGraphicsWidget) or isinstance(node, QGraphicsProxyWidget) )and node.parentItem() != None:
+            node = node.parentItem() 
+        return node 
+
+    def removeItemByName(self, name):
+        [self.scene().removeItem(i) for i in self.scene().items() if hasattr(i, 'name') and i.name == name]
+
+    def clearSelection(self):
+        for node in self.selectedNodes():
+            node.setSelected(False)       
+
+    def mousePressEvent(self, event):    
+        node = None
+        self.pressed_item = self.itemAt(event.pos())
+        if not self.pressed_item or self.nodeFromInstance(self.pressed_item) == self.inputsItem and not isinstance(self.pressed_item, PinBase):
+            if event.button() == QtCore.Qt.LeftButton:
+                self._manipulationMode = MANIP_MODE_SELECT
+                self._selectionRect = SelectionRect(graph=self, mouseDownPos=self.mapToScene(event.pos()))
+                self._mouseDownSelection = self.selectedNodes()
+                super(GraphWidget, self).mousePressEvent(event)
+            elif event.button() == QtCore.Qt.MiddleButton or event.button() == QtCore.Qt.MiddleButton and modifiers == QtCore.Qt.NoModifier:
+                self.viewport().setCursor(QtCore.Qt.OpenHandCursor)
+                self._manipulationMode = MANIP_MODE_PAN
+                self._lastPanPoint = self.mapToScene(event.pos())                
+            elif event.button() == QtCore.Qt.RightButton:
+                self.viewport().setCursor(QtCore.Qt.SizeHorCursor)
+                self._manipulationMode = MANIP_MODE_ZOOM
+                self._lastMousePos = event.pos()
+                self._lastTransform = QtGui.QTransform(self.transform())
+                self._lastSceneRect = self.sceneRect()
+                self._lastSceneCenter = self._lastSceneRect.center()
+                self._lastScenePos = self.mapToScene(event.pos())
+                self._lastOffsetFromSceneCenter = self._lastScenePos - self._lastSceneCenter
+            else:
+                super(GraphWidget, self).mousePressEvent(event) 
+            self.node_box.hide()
+        else:
+            
+
+            self.mousePressPose = event.pos()
+            if not isinstance(self.pressed_item, NodesBox) and self.node_box.isVisible():
+                self.node_box.hide()
+                self.node_box.lineEdit.clear()
+
+            modifiers = event.modifiers()
+            if isinstance(self.pressed_item, QGraphicsItem):
+                #self.autoPanController.start()
+                if isinstance(self.pressed_item, PinBase):
+                    if event.button() == QtCore.Qt.LeftButton:
+                        self.pressed_item.parent().setFlag(QGraphicsItem.ItemIsMovable, False)
+                        self.pressed_item.parent().setFlag(QGraphicsItem.ItemIsSelectable, False)
+                        self._draw_real_time_line = True
+                    if modifiers == QtCore.Qt.AltModifier:
+                        self.removeEdgeCmd(self.pressed_item.edge_list)
+                else:
+                    super(GraphWidget, self).mousePressEvent(event)
+                    if isinstance(self.pressed_item,Nodes.commentNode.commentNode):
+                        node = self.nodeFromInstance(self.pressed_item)
+                        if node.bResize:
+                            return
+
+                    if (event.button() == QtCore.Qt.MidButton or event.button() == QtCore.Qt.LeftButton):
+                        self._manipulationMode = MANIP_MODE_MOVE
+                        self._lastDragPoint =self.mapToScene(event.pos())
+                    if event.button() == QtCore.Qt.MidButton:    
+                        if modifiers != QtCore.Qt.ShiftModifier:
+                            self.clearSelection()
+                        self.pressed_node = self.nodeFromInstance(self.pressed_item)
+                        self.pressed_node.setSelected(True)
+                        selectedNodes = self.selectedNodes()    
+                        if len(selectedNodes) > 0:                               
+                            for node in  selectedNodes:
+                                compute_order = self.getEvaluationOrder(node)                                     
+                                for layer in reversed(sorted([i for i in compute_order.keys()])):
+                                    for n in compute_order[layer]:
+                                        n.setSelected(True)
+                                node.setSelected(True)
+                                if isinstance(node,Nodes.commentNode.commentNode):
+                                    for n in node.nodesToMove:
+                                        n.setSelected(True)
+                    else:
+                        self.pressed_item.setSelected(True)
 
     def mouseMoveEvent(self, event):
-        super(GraphWidget, self).mouseMoveEvent(event)
-        self.mousePos = event.pos()
 
-        if self.bPanMode:
-            delta = self.mapToScene(event.pos()) - self.mapToScene(self._lastMousePos)
-            self.pan(delta)
+        self.mousePos = event.pos()
 
         if self._draw_real_time_line:
             if isinstance(self.pressed_item, PinBase):
@@ -966,28 +1155,117 @@ class GraphWidget(QGraphicsView, Graph):
             path.cubicTo(QtCore.QPoint(p1.x() + distance / multiply, p1.y()), QtCore.QPoint(p2.x() - distance / 2, p2.y()), p2)
             self.real_time_line.setPath(path)
 
-        if self._is_rubber_band_selection:
-            mCurrentPose = self.mapToScene(self.mousePos)
-            mPressPose = self.mapToScene(self.mousePressPose)
+        modifiers = event.modifiers()
 
-        self.autoPanController.Tick(self.viewport().rect(), event.pos())
+        if self._manipulationMode == MANIP_MODE_SELECT:
+            dragPoint = self.mapToScene(event.pos())
+            self._selectionRect.setDragPoint(dragPoint)
+            # This logic allows users to use ctrl and shift with rectangle
+            # select to add / remove nodes.
+            if modifiers == QtCore.Qt.ControlModifier:
+                for node in self.getNodes():
+                    if node != self.inputsItem:
+                        if node in self._mouseDownSelection:
+                            if node.isSelected() and self._selectionRect.collidesWithItem(node):
+                                node.setSelected(False)
+                            elif not node.isSelected() and not self._selectionRect.collidesWithItem(node):
+                                node.setSelected(True)
+                        else:
+                            if not node.isSelected() and self._selectionRect.collidesWithItem(node):
+                                node.setSelected(True)
+                            elif node.isSelected() and not self._selectionRect.collidesWithItem(node):
+                                if node not in self._mouseDownSelection:
+                                    node.setSelected(False)
 
-        self._lastMousePos = event.pos()
+            elif modifiers == QtCore.Qt.ShiftModifier:
+                for node in self.getNodes():
+                    if node != self.inputsItem:
+                        if not node.isSelected() and self._selectionRect.collidesWithItem(node):
+                            node.setSelected(True)
+                        elif node.isSelected() and not self._selectionRect.collidesWithItem(node):
+                            if node not in self._mouseDownSelection:
+                                node.setSelected(False)
 
-    def removeItemByName(self, name):
-        [self.scene().removeItem(i) for i in self.scene().items() if hasattr(i, 'name') and i.name == name]
+            else:
+                self.clearSelection()
+                for node in self.getNodes():
+                    if node != self.inputsItem:
+                        if not node.isSelected() and self._selectionRect.collidesWithItem(node):
+                            node.setSelected(True)
+                        elif node.isSelected() and not self._selectionRect.collidesWithItem(node):
+                            node.setSelected(False)
+
+        elif self._manipulationMode == MANIP_MODE_MOVE :
+            newPos = self.mapToScene(event.pos())
+            delta = newPos - self._lastDragPoint
+            self._lastDragPoint = self.mapToScene(event.pos())
+            selectedNodes = self.selectedNodes()
+            # Apply the delta to each selected node
+            for node in selectedNodes:
+                if node != self.inputsItem:
+                    if isinstance(node,Nodes.commentNode.commentNode):
+                        for n in node.nodesToMove:
+                            if not n.isSelected():
+                                n.translate(delta.x(), delta.y())
+                    node.translate(delta.x(), delta.y())
+
+        elif self._manipulationMode == MANIP_MODE_PAN:
+            delta = self.mapToScene(event.pos()) - self._lastPanPoint
+            rect = self.sceneRect()
+            rect.translate(-delta.x(), -delta.y())
+            self.setSceneRect(rect)
+            self._lastPanPoint = self.mapToScene(event.pos())
+
+        elif self._manipulationMode == MANIP_MODE_ZOOM:
+
+           # How much
+            delta = event.pos() - self._lastMousePos
+            #self._lastMousePos = event.pos()
+            zoomFactor = 1.0
+            if delta.x() > 0:
+                zoomFactor = 1.0 + delta.x() / 100.0
+            else:
+                zoomFactor = 1.0 / (1.0 + abs(delta.x()) / 100.0)
+
+            # Limit zoom to 3x
+            if self._lastTransform.m22() * zoomFactor >= 2.0:
+                return
+
+            # Reset to when we mouse pressed
+            self.setSceneRect(self._lastSceneRect)
+            self.setTransform(self._lastTransform)
+
+            # Center scene around mouse down
+            rect = self.sceneRect()
+            rect.translate(self._lastOffsetFromSceneCenter)
+            self.setSceneRect(rect)
+
+            # Zoom in (QGraphicsView auto-centers!)
+            self.scale(zoomFactor, zoomFactor)
+
+            newSceneCenter = self.sceneRect().center()
+            newScenePos = self.mapToScene(self._lastMousePos)
+            newOffsetFromSceneCenter = newScenePos - newSceneCenter
+
+            # Put mouse down back where is was on screen
+            rect = self.sceneRect()
+            rect.translate(-1 * newOffsetFromSceneCenter)
+            self.setSceneRect(rect)
+
+            # Call udpate to redraw background
+            self.update()
+
+
+        else:
+            super(GraphWidget, self).mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
         super(GraphWidget, self).mouseReleaseEvent(event)
 
-        self.autoPanController.stop()
+        #self.autoPanController.stop()
         self.mouseReleasePos = event.pos()
         self.released_item = self.itemAt(event.pos())
-        self.bPanMode = False
         self._resize_group_mode = False
-        self.viewport().setCursor(QtCore.Qt.ArrowCursor)
-
-        modifiers = event.modifiers()
 
         for n in self.getNodes():
             n.setFlag(QGraphicsItem.ItemIsMovable)
@@ -997,23 +1275,36 @@ class GraphWidget(QGraphicsView, Graph):
             self._draw_real_time_line = False
             if self.real_time_line in self.scene().items():
                 self.removeItemByName('RealTimeLine')
-        if self._is_rubber_band_selection:
-            self._is_rubber_band_selection = False
-            [i.setFlag(QGraphicsItem.ItemIsMovable) for i in self.getNodes() if i.isSelected()]
+        elif self._manipulationMode == MANIP_MODE_PAN:
+            self.viewport().setCursor(QtCore.Qt.ArrowCursor)
+            self._manipulationMode = MANIP_MODE_NONE
 
+        elif self._manipulationMode == MANIP_MODE_SELECT:
+            # If users simply clicks in the empty space, clear selection.
+            if self.mapToScene(event.pos()) == self._selectionRect.pos():
+                self.clearSelection()
+            self._selectionRect.destroy()
+            self._selectionRect = None
+            self._manipulationMode = MANIP_MODE_NONE
+
+        elif self._manipulationMode == MANIP_MODE_MOVE:
+            self._manipulationMode = MANIP_MODE_NONE
+
+        elif self._manipulationMode == MANIP_MODE_ZOOM:
+            self.viewport().setCursor(QtCore.Qt.ArrowCursor)
+            self._manipulationMode = MANIP_MODE_NONE
         if event.button() == QtCore.Qt.RightButton:
             # show nodebox only if drag is small and no items under cursor
             if self.pressed_item is None or isinstance(self.pressed_item, Nodes.commentNode.commentNode):
                 dragDiff = self.mapToScene(self.mousePressPose) - self.mapToScene(event.pos())
                 if all([abs(i) < 0.4 for i in [dragDiff.x(), dragDiff.y()]]):
                     self.showNodeBox()
-        if event.button() == QtCore.Qt.LeftButton and not isinstance(self.released_item, PinBase):
+        elif event.button() == QtCore.Qt.LeftButton and not isinstance(self.released_item, PinBase):
             if isinstance(self.pressed_item, PinBase):
                 # node box tree pops up
                 # with nodes taking supported data types of pressed Pin as input
                 self.showNodeBox(self.pressed_item.dataType, self.pressed_item.direction)
 
-            self._right_button = False
         p_itm = self.pressed_item
         r_itm = self.released_item
         do_connect = True
@@ -1025,28 +1316,15 @@ class GraphWidget(QGraphicsView, Graph):
                 do_connect = False
                 break
         if p_itm and r_itm:
-            if isinstance(p_itm, PinBase) and isinstance(r_itm, PinBase):
-                if cycle_check(p_itm, r_itm):
-                    print('cycles are not allowed')
-                    do_connect = False
+            if p_itm != r_itm:
+                if isinstance(p_itm, PinBase) and isinstance(r_itm, PinBase):
+                    if cycle_check(p_itm, r_itm):
+                        print('cycles are not allowed')
+                        do_connect = False
 
         if do_connect:
-            if p_itm is not r_itm:
+            if p_itm != r_itm:
                 self.addEdge(p_itm, r_itm)
-
-        for nodeUid in self.nodesMoveInfo:
-            self.nodesMoveInfo[nodeUid]['to'] = self.nodes[nodeUid].scenePos()
-        #  check if nodes moved
-        bMoved = False
-        for nodeUid, v in self.nodesMoveInfo.iteritems():
-            if not v['from'] == v['to']:
-                bMoved = True
-
-        # pass copy
-        if bMoved:
-            cmdMove = Commands.Move(dict(self.nodesMoveInfo), self)
-            self.undoStack.push(cmdMove)
-        self.nodesMoveInfo.clear()
 
         selectedNodes = self.selectedNodes()
         if len(selectedNodes) != 0 and event.button() == QtCore.Qt.LeftButton:
@@ -1075,36 +1353,83 @@ class GraphWidget(QGraphicsView, Graph):
             Pin.setData(le.text())
 
     def wheelEvent(self, event):
-        self.zoom(math.pow(2.0, event.delta() / 240.0))
+        (xfo, invRes) = self.transform().inverted()
+        topLeft = xfo.map(self.rect().topLeft())
+        bottomRight = xfo.map(self.rect().bottomRight())
+        center = ( topLeft + bottomRight ) * 0.5
+        zoomFactor = 1.0 + event.delta() * self._mouseWheelZoomRate
+
+        transform = self.transform()
+
+        # Limit zoom to 3x
+        if transform.m22() * zoomFactor >= 2.0:
+            return
+
+        self.scale(zoomFactor, zoomFactor)
+
+        # Call udpate to redraw background
+        self.update()        
 
     def drawBackground(self, painter, rect):
+
         super(GraphWidget, self).drawBackground(painter, rect)
+        self.boundingRect = rect
+        #self.inputsItem.setPos(rect.topLeft().x(),rect.topLeft().y()+50)
+        self.inputsItem.update()
+        #update(QRectF(x, y, width, height))
 
         polygon = self.mapToScene(self.viewport().rect())
         self._file_name_label.setPos(polygon[0])
-        scene_rect = self.sceneRect()
-        color = Colors.SceneBackground
-        painter.fillRect(rect.intersected(scene_rect), QtGui.QBrush(color))
 
-        left = int(scene_rect.left()) - (int(scene_rect.left()) % self.drawGrigSize)
-        top = int(scene_rect.top()) - (int(scene_rect.top()) % self.drawGrigSize)
+        #self.inputsItem.setPos(self.mapToScene(self.viewport().rect().x(),self.viewport().rect().y()+50) )
+        self.inputsItem.setPos(self.boundingRect.topLeft().x(),self.boundingRect.topLeft().y()+50)
 
-        # draw grid vertical lines
-        scaleMult = 1.0
-        for x in xrange(left, int(scene_rect.right()), self.drawGrigSize):
-            if x % (self.drawGrigSize * 10.0) == 0.0:
-                painter.setPen(QtGui.QPen(Colors.GridColorDarker, 1.0 / (self.factor * scaleMult), QtCore.Qt.SolidLine))
-            else:
-                painter.setPen(QtGui.QPen(Colors.GridColor, 0.5 / (self.factor * scaleMult), QtCore.Qt.SolidLine))
-            painter.drawLine(x, scene_rect.top(), x, scene_rect.bottom())
+        color = self._backgroundColor
+        painter.fillRect(rect, QtGui.QBrush(color))
 
-        # draw grid horizontal lines
-        for y in xrange(top, int(scene_rect.bottom()), self.drawGrigSize):
-            if y % (self.drawGrigSize * 10.0) == 0.0:
-                painter.setPen(QtGui.QPen(Colors.GridColorDarker, 1.0 / (self.factor * scaleMult), QtCore.Qt.SolidLine))
-            else:
-                painter.setPen(QtGui.QPen(Colors.GridColor, 0.5 / (self.factor * scaleMult), QtCore.Qt.SolidLine))
-            painter.drawLine(scene_rect.left(), y, scene_rect.right(), y)
+        left = int(rect.left()) - (int(rect.left()) % self._gridSizeFine)
+        top = int(rect.top()) - (int(rect.top()) % self._gridSizeFine)
+
+        # Draw horizontal fine lines
+        gridLines = []
+        painter.setPen(self._gridPenS)
+        y = float(top)
+        while y < float(rect.bottom()):
+            gridLines.append(QtCore.QLineF( rect.left(), y, rect.right(), y ))
+            y += self._gridSizeFine
+        painter.drawLines(gridLines)
+
+        # Draw vertical fine lines
+        gridLines = []
+        painter.setPen(self._gridPenS)
+        x = float(left)
+        while x < float(rect.right()):
+            gridLines.append(QtCore.QLineF( x, rect.top(), x, rect.bottom()))
+            x += self._gridSizeFine
+        painter.drawLines(gridLines)
+
+        # Draw thick grid
+        left = int(rect.left()) - (int(rect.left()) % self._gridSizeCourse)
+        top = int(rect.top()) - (int(rect.top()) % self._gridSizeCourse)
+
+        # Draw vertical thick lines
+        gridLines = []
+        painter.setPen(self._gridPenL)
+        x = left
+        while x < rect.right():
+            gridLines.append(QtCore.QLineF( x, rect.top(), x, rect.bottom() ))
+            x += self._gridSizeCourse
+        painter.drawLines(gridLines)
+
+        # Draw horizontal thick lines
+        gridLines = []
+        painter.setPen(self._gridPenL)
+        y = top
+        while y < rect.bottom():
+            gridLines.append(QtCore.QLineF( rect.left(), y, rect.right(), y ))
+            y += self._gridSizeCourse
+        painter.drawLines(gridLines)
+
 
     def consoleHelp(self):
         msg = """///// AVAILABLE NODES LIST /////\n\n"""
@@ -1134,20 +1459,26 @@ class GraphWidget(QGraphicsView, Graph):
         return var
 
     def createVariableSetter(self, jsonTemplate):
-        var = self.vars[uuid.UUID(jsonTemplate['meta']['var']['uuid'])]
-        instance = SetVarNode(var.name, self, var)
-        return instance
-
+        try:
+            var = self.vars[uuid.UUID(jsonTemplate['meta']['var']['uuid'])]
+            instance = SetVarNode(var.name, self, var)
+            return instance
+        except:
+            print "Error on Variable DataTypes"
     def createVariableGetter(self, jsonTemplate):
-        var = self.vars[uuid.UUID(jsonTemplate['meta']['var']['uuid'])]
-        instance = GetVarNode(var.name, self, var)
-        return instance
+        try:
+            var = self.vars[uuid.UUID(jsonTemplate['meta']['var']['uuid'])]
+            instance = GetVarNode(var.name, self, var)
+            return instance
+        except:
+            print "Error on Variable DataTypes"
 
     def _createNode(self, jsonTemplate):
         nodeInstance = getNodeInstance(Nodes, jsonTemplate['type'], jsonTemplate['name'], self)
 
         # If not found, check variables
         if nodeInstance is None:
+
             if jsonTemplate['type'] == 'GetVarNode':
                 nodeInstance = self.createVariableGetter(jsonTemplate)
             if jsonTemplate['type'] == 'SetVarNode':
@@ -1176,10 +1507,10 @@ class GraphWidget(QGraphicsView, Graph):
 
         if nodeInstance is None:
             raise ValueError("node class not found!")
-
-        self.addNode(nodeInstance, jsonTemplate)
-        nodeInstance.postCreate(jsonTemplate)
-        return nodeInstance
+        else:
+            self.addNode(nodeInstance, jsonTemplate)
+            nodeInstance.postCreate(jsonTemplate)
+            return nodeInstance
 
     def createNode(self, jsonTemplate):
         cmd = Commands.CreateNode(self, jsonTemplate)
@@ -1245,25 +1576,10 @@ class GraphWidget(QGraphicsView, Graph):
             for edgeUid, edge in self.edges.iteritems():
                 print(edgeUid, edge)
 
-    def zoomDelta(self, direction):
-        current_factor = self.factor
-        if direction:
-            self.zoom(1 + 0.1)
-        else:
-            self.zoom(1 - 0.1)
-
     def reset_scale(self):
         self.resetMatrix()
 
-    def zoom(self, scale_factor):
-
-        self.factor = self.matrix().scale(scale_factor, scale_factor).mapRect(QtCore.QRectF(0, 0, 1, 1)).width()
-        self.factor = round(self.factor, 1)
-        if self.factor < (self.minimum_scale + 0.4):
-            self.grid_size = 20
-        else:
-            self.grid_size = 10
-        if self.factor < self.minimum_scale or self.factor > self.maximum_scale:
-            return
-        self.scale(scale_factor, scale_factor)
-        self._scale *= scale_factor
+    def eventFilter(self, object, event):
+        if event.type()== QtCore.QEvent.KeyPress and event.key()== QtCore.Qt.Key_Tab:
+            self.showNodeBox()
+        return False

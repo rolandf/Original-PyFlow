@@ -17,3 +17,4 @@ class ENone(IntEnum):
     none = 0
 
 appendEnumInstance(ENone)
+

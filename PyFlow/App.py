@@ -2,6 +2,7 @@ from os import listdir, path, startfile
 import sys
 from Qt import QtGui
 from Qt import QtCore
+from Qt import QtWidgets
 from Qt.QtWidgets import QMainWindow
 from Qt.QtWidgets import QApplication
 from Qt.QtWidgets import QStyleFactory
@@ -38,8 +39,8 @@ class PluginType:
 
 
 def _implementPlugin(name, pluginType):
-    CommandTemplate = """from Qt.QtWidgets import QUndoCommand
-
+    CommandTemplate = """
+from Qt.QtWidgets import QUndoCommand
 
 class {0}(QUndoCommand):
 
@@ -221,7 +222,6 @@ class {0}(PinWidgetBase):
         print("[INFO] Pin {0} been created.\n Restart application.".format(name))
         startfile(filePath)
 
-
 ## App itself
 class PyFlow(QMainWindow, GraphEditor_ui.Ui_MainWindow):
     def __init__(self, parent=None):
@@ -230,6 +230,8 @@ class PyFlow(QMainWindow, GraphEditor_ui.Ui_MainWindow):
         self.listViewUndoStack = QUndoView(self.dockWidgetContents_3)
         self.listViewUndoStack.setObjectName("listViewUndoStack")
         self.gridLayout_6.addWidget(self.listViewUndoStack, 0, 0, 1, 1)
+
+
 
         self.G = GraphWidget('root', self)
         self.SceneLayout.addWidget(self.G)
@@ -300,8 +302,9 @@ class PyFlow(QMainWindow, GraphEditor_ui.Ui_MainWindow):
         QMainWindow.closeEvent(self, event)
 
     def applySettings(self, settings):
-        self.restoreGeometry(settings.value('Editor/geometry'))
-        self.restoreState(settings.value('Editor/windowState'))
+        pass
+        #self.restoreGeometry(settings.value('Editor/geometry'))
+        #self.restoreState(settings.value('Editor/windowState'))
 
     def togglePropertyView(self):
         if self.dockWidgetNodeView.isVisible():
@@ -317,12 +320,13 @@ class PyFlow(QMainWindow, GraphEditor_ui.Ui_MainWindow):
 
     def shortcuts_info(self):
 
-        data = "Ctrl+Shift+N - togle node box\n"
+        data = "Ctrl+Tab - togle node box\n"
         data += "Ctrl+N - new file\n"
         data += "Ctrl+S - save\n"
         data += "Ctrl+Shift+S - save as\n"
         data += "Ctrl+O - open file\n"
         data += "Ctrl+F - frame\n"
+        data += "Ctrl+D - duplicate\n"
         data += "C - comment selected nodes\n"
         data += "Delete - kill selected nodes\n"
         data += "Ctrl+Shift+ArrowLeft - Align left\n"
