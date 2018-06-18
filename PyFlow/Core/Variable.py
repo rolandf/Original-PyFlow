@@ -90,8 +90,8 @@ class VariableBase(QWidget):
         self.horizontalLayout.addWidget(self.widget)
         self.labelName = QLabel(self)
         self.labelName.setObjectName("labelName")
-        self.horizontalLayout.addWidget(self.labelName)
-        spacerItem = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.horizontalLayout.addWidget(self.labelName,1)
+        spacerItem = QSpacerItem(1, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem)
 
         QtCore.QMetaObject.connectSlotsByName(self)
@@ -169,8 +169,13 @@ class VariableBase(QWidget):
     # @bug in the end of this method we clear undo stack, but we should not. We do this because undo redo goes crazy
     def setDataType(self, dataType, _bJustSpawned=False):
         self.dataType = dataType
-        self.widget.color = Pins.findPinClassByType(self.dataType).color()
-        self.value = Pins.findPinClassByType(self.dataType).pinDataTypeHint()[1]
+        #print self.dataType 
+        try:
+            self.widget.color = Pins.findPinClassByType(self.dataType).color()
+
+            self.value = Pins.findPinClassByType(self.dataType).pinDataTypeHint()[1]
+        except:
+            pass
         self.widget.update()
         if _bJustSpawned:
             return
