@@ -42,11 +42,6 @@ class Vector3(FunctionLibraryBase):
         return pyrr.Vector3(arrV3)
 
     @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.String, str(pyrr.Vector3())), meta={'Category': 'Math|Vector3', 'Keywords': ['vector3']})
-    def v3ToString(v=(DataTypes.FloatVector3, pyrr.Vector3())):
-        return str(v)
-
-    @staticmethod
     @IMPLEMENT_NODE(returns=(DataTypes.Bool, True), nodeType=NodeTypes.Pure, meta={'Category': 'Math|Vector3', 'Keywords': ['lerp']})
     def v3Lerp(a=(DataTypes.FloatVector3, pyrr.Vector3()), b=(DataTypes.FloatVector3, pyrr.Vector3()), alpha=(DataTypes.Float, 0.0)):
         '''Vector3 lerp'''
@@ -63,18 +58,6 @@ class Vector3(FunctionLibraryBase):
     def v3Create(a=(DataTypes.Float, 0.0), b=(DataTypes.Float, 0.0), c=(DataTypes.Float, 0.0)):
         '''creates Vector3 from given components'''
         return pyrr.Vector3([a, b, c])
-
-    @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.FloatVector3, pyrr.Vector3()), nodeType=NodeTypes.Pure, meta={'Category': 'Math|Vector3', 'Keywords': ['vector3', '+']})
-    def v3Add(a=(DataTypes.FloatVector3, pyrr.Vector3()), b=(DataTypes.FloatVector3, pyrr.Vector3())):
-        '''adds vector a and b'''
-        return a + b
-
-    @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.FloatVector3, pyrr.Vector3()), nodeType=NodeTypes.Pure, meta={'Category': 'Math|Vector3', 'Keywords': ['vector3', '-']})
-    def v3Substract(a=(DataTypes.FloatVector3, pyrr.Vector3()), b=(DataTypes.FloatVector3, pyrr.Vector3())):
-        '''substracts vector a and b'''
-        return a - b
 
     @staticmethod
     @IMPLEMENT_NODE(returns=(DataTypes.Float, 0.0), nodeType=NodeTypes.Pure, meta={'Category': 'Math|Vector3', 'Keywords': ['vector3', '|']})

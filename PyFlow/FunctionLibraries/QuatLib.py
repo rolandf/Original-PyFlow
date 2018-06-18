@@ -15,12 +15,6 @@ class QuatLib(FunctionLibraryBase):
         return pyrr.Quaternion()
 
     @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.String, ''), meta={'Category': 'Math|Quaternion', 'Keywords': []})
-    def quatToString(q=(DataTypes.Quaternion, pyrr.Quaternion())):
-        '''Convert to quat to str'''
-        return str(q)
-
-    @staticmethod
     @IMPLEMENT_NODE(returns=(DataTypes.Quaternion, pyrr.Quaternion.from_x_rotation(0.0)), nodeType=NodeTypes.Pure, meta={'Category': 'Math|Quaternion', 'Keywords': []})
     def quatFromXRotation(theta=(DataTypes.Float, 0.0)):
         '''Creates a new Quaternion with a rotation around the X-axis.'''
@@ -205,8 +199,3 @@ class QuatLib(FunctionLibraryBase):
         '''Checks if a quaternion is zero length.'''
         return pyrr.quaternion.is_zero_length(q)
 
-    @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.Quaternion, pyrr.Quaternion()), meta={'Category': 'Math|Quaternion', 'Keywords': ['*']})
-    def quatMult(q1=(DataTypes.Quaternion, pyrr.Quaternion()), q2=(DataTypes.Quaternion, pyrr.Quaternion())):
-        '''"*" operator for quaternions.'''
-        return q1 * q2

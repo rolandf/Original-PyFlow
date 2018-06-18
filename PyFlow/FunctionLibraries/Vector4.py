@@ -15,11 +15,6 @@ class Vector4(FunctionLibraryBase):
         return pyrr.Vector4()
 
     @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.String, str(pyrr.Vector4())), meta={'Category': 'Math|Vector4', 'Keywords': ['vector4']})
-    def v4ToStr(v=(DataTypes.FloatVector4, pyrr.Vector4())):
-        return str(v)
-
-    @staticmethod
     @IMPLEMENT_NODE(returns=(DataTypes.FloatVector4, pyrr.Vector4()), meta={'Category': 'Math|Vector4', 'Keywords': ['vector4']})
     def v4FromUnitLenX():
         '''Unit length x vector4.'''
@@ -72,18 +67,6 @@ class Vector4(FunctionLibraryBase):
     def v4W(v=(DataTypes.FloatVector4, pyrr.Vector4())):
         '''Returns w component of the vector4.'''
         return v.w
-
-    @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.FloatVector4, pyrr.Vector4()), meta={'Category': 'Math|Vector4', 'Keywords': ['vector4', '+']})
-    def v4Add(a=(DataTypes.FloatVector4, pyrr.Vector4()), b=(DataTypes.FloatVector4, pyrr.Vector4())):
-        '''Adds vector4 a and b.'''
-        return a + b
-
-    @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.FloatVector4, pyrr.Vector4()), meta={'Category': 'Math|Vector4', 'Keywords': ['vector4', '-']})
-    def v4Substract(a=(DataTypes.FloatVector4, pyrr.Vector4()), b=(DataTypes.FloatVector4, pyrr.Vector4())):
-        '''Substracts vector a and b.'''
-        return a - b
 
     @staticmethod
     @IMPLEMENT_NODE(returns=(DataTypes.Float, 0.0), meta={'Category': 'Math|Vector4', 'Keywords': ['vector4', '|']})

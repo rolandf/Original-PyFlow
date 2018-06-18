@@ -15,12 +15,6 @@ class Matrix33(FunctionLibraryBase):
         '''Zero matrix33.'''
         return pyrr.Matrix33()
 
-    @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.String, str(pyrr.Matrix33())), meta={'Category': 'Math|Matrix33', 'Keywords': ['matrix33']})
-    ## Matrix33 to string
-    def m33ToStr(m=(DataTypes.Matrix33, pyrr.Matrix33())):
-        '''Matrix33 to string.'''
-        return str(m)
 
     @staticmethod
     @IMPLEMENT_NODE(returns=(DataTypes.Matrix33, pyrr.Matrix33.identity()), meta={'Category': 'Math|Matrix33', 'Keywords': ['matrix33']})

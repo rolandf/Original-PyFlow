@@ -9,63 +9,65 @@ class IntLib(FunctionLibraryBase):
         super(IntLib, self).__init__()
 
     @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.Bool, False), meta={'Category': 'Math|Int', 'Keywords': []})
+    @IMPLEMENT_NODE(returns=(DataTypes.Bool, False), meta={'Category': 'Math|Basic', 'Keywords': []})
     ## Is two integers equal
-    def isequal(a=(DataTypes.Int, 0), b=(DataTypes.Int, 0)):
+    def isequal(a=(DataTypes.Any, 0,{"constraint":"1"}), b=(DataTypes.Any, 0,{"constraint":"1"})):
         '''
         Ints equal
         '''
         return a == b
 
     @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.Bool, False), meta={'Category': 'Math|Int', 'Keywords': []})
+    @IMPLEMENT_NODE(returns=(DataTypes.Bool, False), meta={'Category': 'Math|Basic', 'Keywords': []})
     ## Is a > b
-    def isGreater(a=(DataTypes.Int, 0), b=(DataTypes.Int, 0)):
+    def isGreater(a=(DataTypes.Any, 0,{"constraint":"1"}), b=(DataTypes.Any, 0,{"constraint":"1"})):
         '''
         Is a > b
         '''
+        print a
+        print b
         return a > b
 
     @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.Bool, False), meta={'Category': 'Math|Int', 'Keywords': []})
+    @IMPLEMENT_NODE(returns=(DataTypes.Bool, False), meta={'Category': 'Math|Basic', 'Keywords': []})
     ## Is a >= b
-    def isGreaterOrEqual(a=(DataTypes.Int, 0), b=(DataTypes.Int, 0)):
+    def isGreaterOrEqual(a=(DataTypes.Any, 0,{"constraint":"1"}), b=(DataTypes.Any, 0,{"constraint":"1"})):
         '''
         Is a >= b
         '''
         return a >= b
 
     @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.Bool, False), meta={'Category': 'Math|Int', 'Keywords': []})
+    @IMPLEMENT_NODE(returns=(DataTypes.Bool, False), meta={'Category': 'Math|Basic', 'Keywords': []})
     ## Is a < b
-    def isLess(a=(DataTypes.Int, 0), b=(DataTypes.Int, 0)):
+    def isLess(a=(DataTypes.Any, 0,{"constraint":"1"}), b=(DataTypes.Any, 0,{"constraint":"1"})):
         '''
         Is a < b
         '''
         return a < b
 
     @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.Bool, False), meta={'Category': 'Math|Int', 'Keywords': []})
+    @IMPLEMENT_NODE(returns=(DataTypes.Bool, False), meta={'Category': 'Math|Basic', 'Keywords': []})
     ## Is a <= b
-    def isLessOrEqual(a=(DataTypes.Int, 0), b=(DataTypes.Int, 0)):
+    def isLessOrEqual(a=(DataTypes.Any, 0,{"constraint":"1"}), b=(DataTypes.Any, 0,{"constraint":"1"})):
         '''
         Is a <= b
         '''
         return a <= b
 
     @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.Int, 0), meta={'Category': 'Math|Int', 'Keywords': ['+', 'append']})
+    @IMPLEMENT_NODE(returns=((DataTypes.Any, 0,{"constraint":"1"})), meta={'Category': 'Math|Basic', 'Keywords': ['+', 'append']})
     ## Sum of two ints
-    def add(a=(DataTypes.Int, 0), b=(DataTypes.Int, 0)):
+    def add(a=(DataTypes.Any, 0,{"constraint":"1"}), b=(DataTypes.Any, 0,{"constraint":"1"})):
         '''
         Sum of two ints
         '''
         return a + b
 
     @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.Int, 0), meta={'Category': 'Math|Int', 'Keywords': ['-']})
+    @IMPLEMENT_NODE(returns=((DataTypes.Any, 0,{"constraint":"1"})), meta={'Category': 'Math|Basic', 'Keywords': ['-']})
     ## Int substraction
-    def substract(a=(DataTypes.Int, 0), b=(DataTypes.Int, 0)):
+    def substract(a=(DataTypes.Any, 0,{"constraint":"1"}), b=(DataTypes.Any, 0,{"constraint":"1"})):
         '''
         Int substraction
         '''
@@ -87,9 +89,9 @@ class IntLib(FunctionLibraryBase):
             return -1
 
     @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.Int, 0), meta={'Category': 'Math|Int', 'Keywords': ['*']})
+    @IMPLEMENT_NODE(returns=((DataTypes.Any, 0,{"constraint":"1"})), meta={'Category': 'Math|Basic', 'Keywords': ['*']})
     ## Integer multiplication
-    def mult(a=(DataTypes.Int, 0), b=(DataTypes.Int, 0)):
+    def mult(a=(DataTypes.Any, 0,{"constraint":"1"}), b=(DataTypes.Any, 0,{"constraint":"1"})):
         '''
         Integer multiplication
         '''

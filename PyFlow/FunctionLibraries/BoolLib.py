@@ -7,14 +7,6 @@ class BoolLib(FunctionLibraryBase):
     def __init__(self):
         super(BoolLib, self).__init__()
 
-    @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.Bool, False), meta={'Category': 'Math|Bool', 'Keywords': []})
-    ## make simple boolean
-    def makeBool(b=(DataTypes.Bool, False)):
-        '''
-        make boolean
-        '''
-        return b
 
     @staticmethod
     @IMPLEMENT_NODE(returns=(DataTypes.Int, 0), meta={'Category': 'Math|Bool|Conversion', 'Keywords': []})

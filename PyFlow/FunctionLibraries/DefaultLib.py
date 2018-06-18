@@ -11,13 +11,13 @@ class DefaultLib(FunctionLibraryBase):
         super(DefaultLib, self).__init__()
 
     @staticmethod
-    @IMPLEMENT_NODE(returns=None, nodeType=NodeTypes.Callable, meta={'Category': 'DefaultLib', 'Keywords': ['print']})
+    @IMPLEMENT_NODE(returns=None, nodeType=NodeTypes.Callable, meta={'Category': 'DefaultLib', 'Keywords': ['print']},color=Colors.NodeNameRect)
     ## Python's 'print' function wrapper
-    def pyprint(entity=(DataTypes.String, None)):
+    def pyprint(entity=(DataTypes.Any, None)):
         '''
         printing a string
         '''
-        print(entity)
+        print(str(entity))
 
     @staticmethod
     @IMPLEMENT_NODE(returns=None, nodeType=NodeTypes.Callable, meta={'Category': 'DefaultLib', 'Keywords': []})
@@ -27,31 +27,42 @@ class DefaultLib(FunctionLibraryBase):
         os.system('cls')
 
     @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.Int, 0), meta={'Category': 'GenericTypes', 'Keywords': []})
+    @IMPLEMENT_NODE(returns=(DataTypes.Int, 0), meta={'Category': 'GenericTypes', 'Keywords': ["Int","Integer"]},color=Colors.Int.lighter(50))
     ## make integer
     def makeInt(i=(DataTypes.Int, 0)):
         '''make integer'''
         return i
 
     @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.Float, 0.0), meta={'Category': 'GenericTypes', 'Keywords': []})
+    @IMPLEMENT_NODE(returns=(DataTypes.Float, 0.0), meta={'Category': 'GenericTypes', 'Keywords': ["Float"]},color=Colors.Float.lighter(50))
     ## make floating point number
     def makeFloat(f=(DataTypes.Float, 0.0)):
         '''make floating point number'''
         return f
 
     @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.String, ''), meta={'Category': 'GenericTypes', 'Keywords': []})
+    @IMPLEMENT_NODE(returns=(DataTypes.String, ''), meta={'Category': 'GenericTypes', 'Keywords': ["String"]},color=Colors.String.lighter(50))
     ## make string
     def makeString(s=(DataTypes.String, '')):
         '''make string'''
         return s
 
+    @staticmethod
+    @IMPLEMENT_NODE(returns=(DataTypes.Bool, False), meta={'Category': 'Math|Bool', 'Keywords': []},color=Colors.Bool.lighter(50))
+    ## make boolean
+    def makeBool(b=(DataTypes.Bool, False)):
+        return b
+
     # Conversions
     @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.Bool, False), meta={'Category': 'Conversion', 'Keywords': []})
+    @IMPLEMENT_NODE(returns=(DataTypes.Bool, False), meta={'Category': 'Conversion', 'Keywords': ["Bool"]})
     def intToBool(i=(DataTypes.Int, 0)):
         return bool(i)
+
+    @staticmethod
+    @IMPLEMENT_NODE(returns=(DataTypes.Float, False), meta={'Category': 'Conversion', 'Keywords': []})
+    def intToFloat(i=(DataTypes.Int, 0)):
+        return float(i)
 
     @staticmethod
     @IMPLEMENT_NODE(returns=(DataTypes.Int, 0), meta={'Category': 'Conversion', 'Keywords': []})
@@ -66,16 +77,11 @@ class DefaultLib(FunctionLibraryBase):
         return time.clock()
 
     @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.Float, False), meta={'Category': 'Conversion', 'Keywords': []})
-    def intToFloat(i=(DataTypes.Int, 0)):
-        return float(i)
-
-    @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.String, ''), meta={'Category': 'Conversion', 'Keywords': []})
-    def intToString(i=(DataTypes.Int, 0)):
+    @IMPLEMENT_NODE(returns=(DataTypes.String, ''), meta={'Category': 'Conversion', 'Keywords': []},color=Colors.String.lighter(50))
+    def toString(i=(DataTypes.Any, 0)):
         return str(i)
 
     @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.String, ''), meta={'Category': 'Conversion', 'Keywords': []})
-    def floatToString(f=(DataTypes.Float, 0.0)):
-        return str(f)
+    @IMPLEMENT_NODE(returns=(DataTypes.Any, 0,{"constraint":"1"}), meta={'Category': 'Conversion', 'Keywords': []},color=Colors.Yellow.lighter(50))
+    def passtrhough(input=(DataTypes.Any, 0,{"constraint":"1"})):
+        return input      
