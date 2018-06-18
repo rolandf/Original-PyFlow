@@ -8,6 +8,7 @@ Also, it implements [initializeFromFunction](@ref PyFlow.Core.Node.initializeFro
 from Settings import *
 from Qt import QtCore
 from Qt import QtGui
+from Qt import QtWidgets
 from Qt.QtWidgets import QGraphicsTextItem
 from Qt.QtWidgets import QGraphicsItem
 from Qt.QtWidgets import QLabel
@@ -20,6 +21,7 @@ from Qt.QtWidgets import QStyle
 from Qt.QtWidgets import QLineEdit
 from Qt.QtWidgets import QApplication
 from Qt.QtWidgets import QTreeWidgetItem
+from Qt.QtWidgets import QWidget
 from AbstractGraph import *
 from ..Pins import CreatePin
 from types import MethodType
@@ -39,19 +41,19 @@ class NodeName(QGraphicsTextItem):
         self.setTextInteractionFlags(QtCore.Qt.NoTextInteraction)
         self.desc = parent.description()
         self.descFontPen = QtGui.QPen(QtCore.Qt.gray, 0.5)
-        self.defaultHeight = 30
-        self.h = self.defaultHeight
         self.text_color = Colors.PinNameColor
         self.setDefaultTextColor(self.text_color)
         self.opt_font = QtGui.QFont('Consolas')
         self.opt_font_size = 8
         self.opt_font.setPointSize(self.opt_font_size)
         self.setFont(self.opt_font)
+        self.defaultHeight = self.opt_font_size*2.5
+        self.h = self.defaultHeight        
         self.descFont = QtGui.QFont("Consolas", self.opt_font.pointSize() / 2.0, 2, True)
         self.setPos(0, -self.boundingRect().height() - 8)
         self.color = color
         self.clipRect = None
-        self.roundCornerFactor = 1.0
+        self.roundCornerFactor = 10
         self.bg = QtGui.QImage(':/icons/resources/white.png')
         self.icon = None
 
@@ -76,25 +78,30 @@ class NodeName(QGraphicsTextItem):
 
     def paint(self, painter, option, widget):
         r = QtCore.QRectF(option.rect)
-        r.setWidth(self.parentItem().childrenBoundingRect().width() - 0.25)
-        r.setX(0.25)
-        r.setY(0.25)
+        r.setWidth(self.parentItem().childrenBoundingRect().width() -1)
+        #r.setX(0.25)
+        #r.setY(0.25)
+
         b = QtGui.QLinearGradient(0, 0, 0, r.height())
         b.setColorAt(0, QtGui.QColor(0, 0, 0, 0))
         b.setColorAt(0.25, self.color)
         b.setColorAt(1, self.color)
         painter.setPen(QtCore.Qt.NoPen)
+        b = QtGui.QBrush(self.bg)
         if self.bUseTextureBg:
-            b = QtGui.QBrush(self.bg)
             b.setStyle(QtCore.Qt.TexturePattern)
             painter.setBrush(b)
         else:
             painter.setBrush(self.color)
             b.setStyle(QtCore.Qt.SolidPattern)
-        painter.drawRoundedRect(r, self.roundCornerFactor, self.roundCornerFactor)
+
+        r.setHeight(r.height()-1)  
+        #painter.drawRoundedRect(1, 1, r.width(), r.height(), self.roundCornerFactor, self.roundCornerFactor, QtCore.Qt.AbsoluteSize)
+        #painter.drawRect(1, r.height() * 0.5 + 2, r.width(), r.height() * 0.5)
+
         parentRet = self.parentItem().childrenBoundingRect()
         if self.icon:
-            painter.drawImage(QtCore.QRect(parentRet.width() - 9, 0, 8, 8), self.icon, QtCore.QRect(0, 0, self.icon.width(), self.icon.height()))
+            painter.drawImage(QtCore.QRect(parentRet.width() - 12, 5, 8, 8), self.icon, QtCore.QRect(0, 0, self.icon.width(), self.icon.height()))
 
         super(NodeName, self).paint(painter, option, widget)
 
@@ -113,7 +120,7 @@ class Node(QGraphicsItem, NodeBase):
     """
     Default node description
     """
-    def __init__(self, name, graph, w=80, color=Colors.NodeBackgrounds, headColor=Colors.NodeNameRect, bUseTextureBg=True):
+    def __init__(self, name, graph, w=8000, color=Colors.NodeBackgrounds, headColor=Colors.NodeNameRect, bUseTextureBg=False):
         QGraphicsItem.__init__(self)
         NodeBase.__init__(self, name, graph)
         self.setCacheMode(QGraphicsItem.DeviceCoordinateCache)
@@ -123,11 +130,11 @@ class Node(QGraphicsItem, NodeBase):
         self._left_stretch = 0
         self.color = color
         self.height_offset = 3
-        self.nodeMainGWidget = QGraphicsWidget()
+        self.nodeMainGWidget = QGraphicsWidget(self)
         self.nodeMainGWidget.setObjectName('{0}MainLayout'.format(name))
         self._w = 0
         self.h = 40
-        self.sizes = [0, 0, self.w, self.h, 1, 1]
+        self.sizes = [0, 0, self.w, self.h, 10, 10]
         self.w = w
         self.setFlag(QGraphicsItem.ItemIsMovable)
         self.setFlag(QGraphicsItem.ItemIsFocusable)
@@ -156,11 +163,15 @@ class Node(QGraphicsItem, NodeBase):
         self.portsMainLayout.addItem(self.outputsLayout)
 
         self.setZValue(1)
-        self.setCursor(QtCore.Qt.OpenHandCursor)
+        
 
         self.tweakPosition()
         self.icon = None
 
+        self._Constraints = {}
+        self.asGraphSides = False
+
+        
     @staticmethod
     def recreate(node):
         templ = node.serialize()
@@ -197,10 +208,20 @@ class Node(QGraphicsItem, NodeBase):
     @staticmethod
     ## Constructs a node from given annotated function and adds it to the canvas
     def initializeFromFunction(foo, graph):
+        color = foo.__annotations__["color"]
+        retAnyOpts = None
+        retConstraint = None
         meta = foo.__annotations__['meta']
         returnType = returnDefaultValue = None
         if foo.__annotations__['return'] is not None:
-            returnType, returnDefaultValue = foo.__annotations__['return']
+            returnType = foo.__annotations__['return'][0]
+            returnDefaultValue =  foo.__annotations__['return'][1]
+            if len(foo.__annotations__['return'])>2:
+                if foo.__annotations__['return'][2].has_key("supportedDataTypes"):
+                    retAnyOpts = foo.__annotations__['return'][2]["supportedDataTypes"]
+                if foo.__annotations__['return'][2].has_key("constraint"):
+                    retConstraint = foo.__annotations__['return'][2]["constraint"]                 
+
         nodeType = foo.__annotations__['nodeType']
         fooArgNames = getargspec(foo).args
 
@@ -224,11 +245,11 @@ class Node(QGraphicsItem, NodeBase):
                                                  'keywords': keywords,
                                                  'description': description
                                                  })
-        inst = nodeClass(graph.getUniqNodeName(foo.__name__), graph)
+        inst = nodeClass(graph.getUniqNodeName(foo.__name__), graph,color = color)
 
         if returnType is not None:
             structClass = type(returnDefaultValue) if returnType == DataTypes.Enum else ENone
-            p = inst.addOutputPin('out', returnType, userStructClass=structClass)
+            p = inst.addOutputPin('out', returnType, userStructClass=structClass,allowedPins=retAnyOpts,constraint=retConstraint)
             p.setData(returnDefaultValue)
             p.setDefaultValue(returnDefaultValue)
 
@@ -238,18 +259,36 @@ class Node(QGraphicsItem, NodeBase):
 
         # iterate over function arguments and create pins according to data types
         for index in range(len(fooArgNames)):
+
             argName = fooArgNames[index]
+
             argDefaultValue = foo.__defaults__[index]
             dataType = foo.__annotations__[argName]
-            structClass = type(argDefaultValue) if dataType == DataTypes.Enum else ENone
+            structClass = argDefaultValue[0] if dataType == DataTypes.Enum else ENone
+            argDefaultValue = argDefaultValue if dataType != DataTypes.Enum else argDefaultValue[1]
+            anyOpts = None
+            constraint = None
             # tuple means this is reference pin with default value eg - (dataType, defaultValue)
-            if isinstance(dataType, tuple):
-                outRef = inst.addOutputPin(argName, dataType[0], userStructClass=structClass)
+            if isinstance(dataType, list):
+                if dataType[0][0] == DataTypes.Any and len(dataType[0])>2:
+                    if dataType[0][2].has_key("supportedDataTypes"):
+                        anyOpts = dataType[0][2]["supportedDataTypes"]
+                    if dataType[0][2].has_key("constraint"):
+                        constraint = dataType[0][2]["constraint"]                        
+                dataType = dataType[0][0]
+                
+            if isinstance(dataType, tuple) :
+                if dataType[0] == DataTypes.Any and len(dataType)>2:
+                    if dataType[2].has_key("supportedDataTypes"):
+                        anyOpts = dataType[2]["supportedDataTypes"]
+                    if dataType[2].has_key("constraint"):
+                        constraint = dataType[2]["constraint"]               
+                outRef = inst.addOutputPin(argName, dataType[0], userStructClass=structClass,constraint=constraint)
                 outRef.setDefaultValue(argDefaultValue)
                 outRef.setData(dataType[1])
-                refs.append(outRef)
+                refs.append(outRef)               
             else:
-                inp = inst.addInputPin(argName, dataType, userStructClass=structClass)
+                inp = inst.addInputPin(argName, dataType, userStructClass=structClass,allowedPins=anyOpts,constraint=constraint)
                 inp.setData(argDefaultValue)
                 inp.setDefaultValue(argDefaultValue)
 
@@ -314,15 +353,15 @@ class Node(QGraphicsItem, NodeBase):
         self.setY(roundup(value.y() - self.graph().grid_size, self.graph().grid_size))
 
     def boundingRect(self):
-        return self.childrenBoundingRect()
-
+        rect = self.childrenBoundingRect()
+        return rect
     def itemChange(self, change, value):
-        if change == self.ItemPositionChange:
-            # grid snapping
-            value.setX(roundup(value.x() - self.graph().grid_size + self.graph().grid_size / 3.0, self.graph().grid_size))
-            value.setY(roundup(value.y() - self.graph().grid_size + self.graph().grid_size / 3.0, self.graph().grid_size))
-            value.setY(value.y() - 2)
-            return value
+        #if change == self.ItemPositionChange:
+        #    # grid snapping
+        #    value.setX(roundup(value.x() - self.graph().grid_size + self.graph().grid_size / 3.0, self.graph().grid_size))
+        #    value.setY(roundup(value.y() - self.graph().grid_size + self.graph().grid_size / 3.0, self.graph().grid_size))
+        #    value.setY(value.y() - 2)
+        #    return value
         return QGraphicsItem.itemChange(self, change, value)
 
     @staticmethod
@@ -425,6 +464,8 @@ class Node(QGraphicsItem, NodeBase):
         new_node = self.graph().createNode(templ)
         return new_node
 
+      
+
     def paint(self, painter, option, widget):
         NodePainter.default(self, painter, option, widget)
 
@@ -437,12 +478,12 @@ class Node(QGraphicsItem, NodeBase):
         self.update()
         QGraphicsItem.mouseReleaseEvent(self, event)
 
-    def addInputPin(self, pinName, dataType, foo=None, hideLabel=False, bCreateInputWidget=True, index=-1, userStructClass=ENone, defaultValue=None):
-        p = self._addPin(PinDirection.Input, dataType, foo, hideLabel, bCreateInputWidget, pinName, index=index, userStructClass=userStructClass, defaultValue=defaultValue)
+    def addInputPin(self, pinName, dataType, foo=None, hideLabel=False, bCreateInputWidget=True, index=-1, userStructClass=ENone, defaultValue=None,constraint=None,allowedPins=None):
+        p = self._addPin(PinDirection.Input, dataType, foo, hideLabel, bCreateInputWidget, pinName, index=index, userStructClass=userStructClass, defaultValue=defaultValue,constraint=constraint,allowedPins=allowedPins)
         return p
 
-    def addOutputPin(self, pinName, dataType, foo=None, hideLabel=False, bCreateInputWidget=True, index=-1, userStructClass=ENone, defaultValue=None):
-        p = self._addPin(PinDirection.Output, dataType, foo, hideLabel, bCreateInputWidget, pinName, index=index, userStructClass=userStructClass, defaultValue=defaultValue)
+    def addOutputPin(self, pinName, dataType, foo=None, hideLabel=False, bCreateInputWidget=True, index=-1, userStructClass=ENone, defaultValue=None,constraint=None,allowedPins=None):
+        p = self._addPin(PinDirection.Output, dataType, foo, hideLabel, bCreateInputWidget, pinName, index=index, userStructClass=userStructClass, defaultValue=defaultValue,constraint=constraint,allowedPins=allowedPins)
         return p
 
     @staticmethod
@@ -472,7 +513,7 @@ class Node(QGraphicsItem, NodeBase):
         # uid
         leUid = QLineEdit(str(self.uid))
         leUid.setReadOnly(True)
-        formLayout.addRow("Uuid", leUid)
+        #formLayout.addRow("Uuid", leUid)
 
         # type
         leType = QLineEdit(self.__class__.__name__)
@@ -481,7 +522,7 @@ class Node(QGraphicsItem, NodeBase):
 
         # pos
         le_pos = QLineEdit("{0} x {1}".format(self.pos().x(), self.pos().y()))
-        formLayout.addRow("Pos", le_pos)
+        #formLayout.addRow("Pos", le_pos)
 
         # inputs
         if len([i for i in self.inputs.values()]) != 0:
@@ -499,38 +540,40 @@ class Node(QGraphicsItem, NodeBase):
                     formLayout.addRow(inp.name, w)
                     if inp.hasConnections():
                         w.setEnabled(False)
-
-        # outputs
-        if len([i for i in self.outputs.values()]) != 0:
-            sep_outputs = QLabel()
-            sep_outputs.setStyleSheet("background-color: black;")
-            sep_outputs.setText("OUTPUTS")
-            formLayout.addRow("", sep_outputs)
-            for out in self.outputs.values():
-                if out.dataType == DataTypes.Exec:
-                    continue
-                w = getInputWidget(out.dataType, out.setData, out.defaultValue(), out.getUserStruct())
-                if w:
-                    w.setWidgetValue(out.currentData())
-                    w.setObjectName(out.getName())
-                    formLayout.addRow(out.name, w)
-                    if out.hasConnections():
-                        w.setEnabled(False)
-
+                        w.hide()
+        if self.asGraphSides:
+            # outputs
+            if len([i for i in self.outputs.values()]) != 0:
+                sep_outputs = QLabel()
+                sep_outputs.setStyleSheet("background-color: black;")
+                sep_outputs.setText("OUTPUTS")
+                formLayout.addRow("", sep_outputs)
+                for out in self.outputs.values():
+                    #if out.dataType == DataTypes.Exec:
+                    #    continue
+                    dataSetter = out.call if out.dataType == DataTypes.Exec else out.setData
+                    w = getInputWidget(out.dataType, dataSetter, out.defaultValue(), out.getUserStruct())
+                    if w:
+                        w.setWidgetValue(out.currentData())
+                        w.setObjectName(out.getName())
+                        formLayout.addRow(out.name, w)
+                        if out.hasConnections():
+                            w.setEnabled(True)
+        
         doc_lb = QLabel()
         doc_lb.setStyleSheet("background-color: black;")
         doc_lb.setText("Description")
-        formLayout.addRow("", doc_lb)
+        #formLayout.addRow("", doc_lb)
         doc = QTextBrowser()
         doc.setOpenExternalLinks(True)
         doc.setHtml(self.description())
-        formLayout.addRow("", doc)
+        #formLayout.addRow("", doc)
 
     def addContainer(self, portType, head=False):
         container = QGraphicsWidget()
         container.setObjectName('{0}PinContainerWidget'.format(self.name))
         container.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Maximum)
-        container.sizeHint(QtCore.Qt.MinimumSize, QtCore.QSizeF(50.0, 10.0))
+        #container.sizeHint(QtCore.Qt.MinimumSize, QtCore.QSizeF(50.0, 10.0))
 
         lyt = QGraphicsLinearLayout()
         lyt.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
@@ -564,11 +607,20 @@ class Node(QGraphicsItem, NodeBase):
         if pin:
             pin.kill()
 
-    def _addPin(self, pinDirection, dataType, foo, hideLabel=False, bCreateInputWidget=True, name='', index=-1, userStructClass=ENone, defaultValue=None):
+    def _addPin(self, pinDirection, dataType, foo, hideLabel=False, bCreateInputWidget=True, name='', index=-1, userStructClass=ENone, defaultValue=None,constraint=None,allowedPins=None):
         # check if pins with this name already exists and get uniq name
         name = self.getUniqPinName(name)
 
         p = CreatePin(name, self, dataType, pinDirection, userStructClass=userStructClass)
+        if p:
+            p.constraint = constraint
+        if dataType == DataTypes.Any and allowedPins != None:
+            p.supportedDataTypesList = allowedPins
+        if constraint != None:
+            if self._Constraints.has_key(constraint):
+                self._Constraints[constraint].append(p)
+            else:
+                self._Constraints[constraint] = [p]
         if defaultValue is not None:
             p.setDefaultValue(defaultValue)
 
@@ -630,3 +682,41 @@ class Node(QGraphicsItem, NodeBase):
         if not hasattr(self, name):
             setattr(self, name, p)
         return p
+
+class EditableLabel(QWidget):
+    def __init__(self, name="",parent=None):
+        super(EditableLabel, self).__init__(parent)
+
+        self.nameLabel = QtWidgets.QLabel(name)
+        
+        self.mainLayout = QtWidgets.QGridLayout()
+        self.mainLayout.addWidget(self.nameLabel, 0, 0)
+        
+        self.setLayout(self.mainLayout)
+        self.create_actions()
+        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(self.setup_context_menu)
+        
+    def setText(self,text):
+        self.nameLabel.setText(text)
+    def mouseDoubleClickEvent(self, event):
+        super(EditableLabel, self).mouseDoubleClickEvent(self, event)
+        self.start_edit_name()
+        event.accept()
+
+    def create_actions(self):
+        self.startEditAct = QtWidgets.QAction('Edit', self, triggered = self.start_edit_name)
+        
+    def setup_context_menu(self, point):
+        aMenu = QtWidgets.QMenu()
+        aMenu.addAction(self.startEditAct)
+        aMenu.exec_(point) 
+        
+    def start_edit_name(self):
+        self.nameEdit = QtWidgets.QLineEdit(self.nameLabel.text())
+        self.mainLayout.addWidget(self.nameEdit, 0, 0)
+        self.nameEdit.returnPressed.connect(self.finish_edit_name)
+        
+    def finish_edit_name(self):
+        self.nameLabel.setText(self.nameEdit.text())
+        self.nameEdit.hide()
