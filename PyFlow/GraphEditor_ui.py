@@ -91,7 +91,7 @@ class Ui_MainWindow(object):
         self.dockWidgetVariables.setWidget(self.dockWidgetContents_5)
         MainWindow.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.dockWidgetVariables)
         self.dockWidgetNodeView = QtWidgets.QDockWidget(MainWindow)
-        self.dockWidgetNodeView.setMinimumSize(QtCore.QSize(500, 166))
+        #self.dockWidgetNodeView.setMinimumSize(QtCore.QSize(500, 166))
         self.dockWidgetNodeView.setAllowedAreas(QtCore.Qt.AllDockWidgetAreas)
         self.dockWidgetNodeView.setObjectName("dockWidgetNodeView")
         self.dockWidgetContents = QtWidgets.QWidget()
