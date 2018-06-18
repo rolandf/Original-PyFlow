@@ -155,6 +155,11 @@ class DataTypes(IntEnum):
     Quaternion = 11
     Enum = 12
 
+    Sg = 13
+    SgFilter = 14
+
+    Any = 15
+
 
 ## Returns string representation of the data type identifier
 # See [DataTypes](@ref PyFlow.Core.AGraphCommon.DataTypes)
