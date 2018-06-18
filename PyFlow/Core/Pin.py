@@ -37,8 +37,9 @@ class PinWidgetBase(QGraphicsWidget, PinBase):
         self.actionDisconnect = self.menu.addAction('disconnect all')
         self.actionDisconnect.triggered.connect(self.disconnectAll)
         ## Copy UUID to buffer
-        self.actionCopyUid = self.menu.addAction('copy uid')
-        self.actionCopyUid.triggered.connect(self.saveUidToClipboard)
+        #self.actionCopyUid = self.menu.addAction('copy uid')
+        #self.actionCopyUid.triggered.connect(self.saveUidToClipboard)
+
         ## Call exec pin
         self.actionCall = self.menu.addAction('execute')
         self.actionCall.triggered.connect(self.call)
@@ -56,15 +57,22 @@ class PinWidgetBase(QGraphicsWidget, PinBase):
         self._execPen = QtGui.QPen(Colors.Exec, 0.5, QtCore.Qt.SolidLine)
         self.setGeometry(0, 0, self.width, self.height)
         self._dirty_pen = QtGui.QPen(Colors.DirtyPen, 0.5, QtCore.Qt.DashLine, QtCore.Qt.RoundCap, QtCore.Qt.RoundJoin)
-
+        
         self.pinImage = QtGui.QImage(':/icons/resources/array.png')
         self.bLabelHidden = False
         self.bAnimate = False
         self._val = 0
-
+        self.constraint = None
+        self.dynamic = False
+        
     def setUserStruct(self, inStruct):
         PinBase.setUserStruct(self, inStruct)
         self.userStructChanged.emit(inStruct)
+
+    def setDeletable(self):
+        self.deletable = True
+        self.actionRemove = self.menu.addAction('remove')
+        self.actionRemove.triggered.connect(self.kill)        
 
     def setName(self, newName):
         super(PinWidgetBase, self).setName(newName)
@@ -95,7 +103,7 @@ class PinWidgetBase(QGraphicsWidget, PinBase):
     @staticmethod
     def color():
         return QtGui.QColor()
-
+        
     def call(self):
         PinBase.call(self)
 
@@ -115,6 +123,7 @@ class PinWidgetBase(QGraphicsWidget, PinBase):
     def deserialize(owningNode, jsonData):
         name = jsonData['name']
         dataType = jsonData['dataType']
+
         direction = jsonData['direction']
         value = jsonData['value']
         uid = uuid.UUID(jsonData['uuid'])
@@ -174,7 +183,7 @@ class PinWidgetBase(QGraphicsWidget, PinBase):
 
     def paint(self, painter, option, widget):
         background_rect = QtCore.QRectF(0, 0, self.width, self.width)
-
+        self.cPos = background_rect
         w = background_rect.width() / 2
         h = background_rect.height() / 2
 
@@ -211,12 +220,8 @@ class PinWidgetBase(QGraphicsWidget, PinBase):
             painter.drawPolygon(arrow)
         else:
             painter.setBrush(QtGui.QBrush(linearGrad))
+            rect = background_rect.setX(background_rect.x())
             painter.drawEllipse(background_rect)
-            arrow = QtGui.QPolygonF([QtCore.QPointF(self.width, self.height * 0.7),
-                                    QtCore.QPointF(self.width * 1.15, self.height / 2.0),
-                                    QtCore.QPointF(self.width, self.height * 0.3),
-                                    QtCore.QPointF(self.width, self.height * 0.7)])
-            painter.drawPolygon(arrow)
 
     def contextMenuEvent(self, event):
         self.menu.exec_(event.screenPos())
@@ -241,6 +246,10 @@ class PinWidgetBase(QGraphicsWidget, PinBase):
 
     def pinConnected(self, other):
         PinBase.pinConnected(self, other)
+        #if self.dynamic:
+        #    data = self.serialize()
+        #    pin = self.deserialize(self.parent(),data)
+        #    pin.dynamic=True
         self.OnPinConnected.emit(other)
 
     def pinDisconnected(self, other):
