@@ -11,7 +11,7 @@ from .. import VariablesWidget_ui
 from Variable import VariableBase
 from types import MethodType
 from AbstractGraph import *
-
+from uuid import uuid4
 
 def lwMousePressEvent(self, event):
     QListWidget.mousePressEvent(self, event)
@@ -47,8 +47,11 @@ class VariablesWidget(QWidget, VariablesWidget_ui.Ui_Form):
         self.graph._clearPropertiesView()
 
     def createVariable(self, uid=None):
-        var = VariableBase(self.graph.getUniqVarName('NewVar'), False, self.graph, self, DataTypes.Bool, uid=uid)
+        if uid == False:
+            uid = uuid4()
+
+        var = VariableBase(self.graph.getUniqVarName('NewVar'), 0, self.graph, self, DataTypes.Float, uid=uid)
         item = QListWidgetItem(self.listWidget)
-        item.setSizeHint(QtCore.QSize(60, 38))
+        item.setSizeHint(QtCore.QSize(60, 38))        
         self.listWidget.setItemWidget(item, var)
         return var
