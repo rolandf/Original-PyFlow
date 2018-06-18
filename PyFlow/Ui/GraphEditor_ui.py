@@ -308,4 +308,5 @@ class Ui_MainWindow(object):
         self.actionNew_pin.setText(QtCompat.translate("MainWindow", "New pin", None, -1))
         self.actionNew.setText(QtCompat.translate("MainWindow", "New", None, -1))
 
-import nodes_res_rc
+from .. import nodes_res_rc
+

@@ -61,4 +61,5 @@ class Ui_Form(object):
         self.cbHideLabel.setToolTip(QtCompat.translate("Form", "should hide label", None, -1))
         self.cbHideLabel.setText(QtCompat.translate("Form", "hide label", None, -1))
 
-import nodes_res_rc
+from .. import nodes_res_rc
+

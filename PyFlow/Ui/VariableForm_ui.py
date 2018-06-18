@@ -41,4 +41,5 @@ class Ui_Form(object):
         Form.setWindowTitle(QtCompat.translate("Form", "Form", None, -1))
         self.labelName.setText(QtCompat.translate("Form", "var name", None, -1))
 
-import nodes_res_rc
+from .. import nodes_res_rc
+

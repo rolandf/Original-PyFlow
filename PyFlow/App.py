@@ -20,7 +20,7 @@ import Nodes
 import Commands
 import FunctionLibraries
 import Pins
-import GraphEditor_ui
+from Ui import GraphEditor_ui
 import json
 from time import clock
 

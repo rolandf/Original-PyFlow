@@ -144,4 +144,4 @@ class Ui_CodeEditorWidget(object):
         self.pbReset.setText(QtCompat.translate("CodeEditorWidget", "reset", None, -1))
         self.pbSave.setText(QtCompat.translate("CodeEditorWidget", "save", None, -1))
 
-import nodes_res_rc
+from .. import nodes_res_rc
