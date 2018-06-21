@@ -108,7 +108,6 @@ class EnumInputWidget(InputWidgetSingle):
         # self._userStruct = kwds['userStructClass']
         self.cb = QComboBox(self)
         self.setWidget(self.cb)
-        print kwds['userStructClass']
         for i in list(kwds['userStructClass']):
             self.cb.addItem(i.name, i.value)
         self.cb.currentIndexChanged[int].connect(self.dataSetCallback)

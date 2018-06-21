@@ -11,6 +11,7 @@ from Qt.QtWidgets import QInputDialog
 from Qt.QtWidgets import QUndoView
 from Core.Widget import GraphWidget
 from Core.Widget import Direction
+from Core.Widget import NodesBox
 from Core.VariablesWidget import VariablesWidget
 import Nodes
 import Commands
@@ -55,6 +56,8 @@ class {0}(QUndoCommand):
 from ..Core.Settings import *
 from ..Core import Node
 
+## Register Datatypes Here
+#registerDatatype("YourName")
 
 class {0}(Node):
     def __init__(self, name, graph):
@@ -114,6 +117,8 @@ from ..Core.AGraphCommon import *
 # import stuff you need
 # ...
 
+## Register Datatypes Here
+#registerDatatype("YourName")
 
 class {0}(FunctionLibraryBase):
     '''doc string for {0}'''
@@ -143,6 +148,8 @@ class {0}(FunctionLibraryBase):
     PinTemplate = """from ..Core.Pin import PinWidgetBase
 from ..Core.AGraphCommon import *
 
+## Register Datatypes Here
+#registerDatatype("YourName")
 
 class {0}(PinWidgetBase):
     '''doc string for {0}'''
@@ -231,7 +238,10 @@ class PyFlow(QMainWindow, GraphEditor_ui.Ui_MainWindow):
 
 
         self.G = GraphWidget('root', self)
+        self.nodeBox2 = NodesBox(None,self.G)
         self.SceneLayout.addWidget(self.G)
+        
+        self.gridLayout_7.addWidget(self.nodeBox2)
 
         self.actionVariables.triggered.connect(self.toggleVariables)
         self.actionPlot_graph.triggered.connect(self.G.plot)
@@ -266,20 +276,20 @@ class PyFlow(QMainWindow, GraphEditor_ui.Ui_MainWindow):
         self.tick_timer.timeout.connect(self.mainLoop)
 
 
-        self.styleSheetEditorUi = StyleSheetEditor()
-        self.styleSheetEditorUi.Updated.connect(self.updateStyle)
+        self.styleSheetEditor = StyleSheetEditor()
+        self.styleSheetEditor.Updated.connect(self.updateStyle)
 
         QApp = QCoreApplication.instance()    
         
-        QApp.setStyleSheet( self.styleSheetEditorUi.getStyleSheet() )
+        QApp.setStyleSheet( self.styleSheetEditor.getStyleSheet() )
 
     def editTheme(self):
-        self.styleSheetEditorUi.show()
+        self.styleSheetEditor.show()
 
     def updateStyle(self)   : 
-        if self.styleSheetEditorUi:
+        if self.styleSheetEditor:
             QApp = QCoreApplication.instance()
-            QApp.setStyleSheet( self.styleSheetEditorUi.getStyleSheet() )     
+            QApp.setStyleSheet( self.styleSheetEditor.getStyleSheet() )     
 
     def startMainLoop(self):
         self.tick_timer.start(1000 / EDITOR_TARGET_FPS)
@@ -333,16 +343,26 @@ class PyFlow(QMainWindow, GraphEditor_ui.Ui_MainWindow):
             self.dockWidgetVariables.show()
 
     def shortcuts_info(self):
-
-        data = "Ctrl+Tab - togle node box\n"
-        data += "Ctrl+N - new file\n"
+        data = "Ctrl+N - new file\n"
         data += "Ctrl+S - save\n"
         data += "Ctrl+Shift+S - save as\n"
         data += "Ctrl+O - open file\n"
-        data += "Ctrl+F - frame\n"
+
         data += "Ctrl+D - duplicate\n"
-        data += "C - comment selected nodes\n"
+        data += "Alt+Drag - duplicate\n"
         data += "Delete - kill selected nodes\n"
+
+        data += "Ctrl+C - copy\n"
+        data += "Ctrl+V - paste\n"
+
+        data += "Ctrl+Z - undo\n"
+        data += "Ctrl+Y - redo\n"
+
+        data +=  "Tab - togle node box\n"
+        data += "F - frame Selected\n"
+        data += "G - frame All\n"
+        data += "C - comment selected nodes\n"
+
         data += "Ctrl+Shift+ArrowLeft - Align left\n"
         data += "Ctrl+Shift+ArrowUp - Align Up\n"
         data += "Ctrl+Shift+ArrowRight - Align right\n"

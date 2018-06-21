@@ -8,94 +8,7 @@ class IntLib(FunctionLibraryBase):
     def __init__(self):
         super(IntLib, self).__init__()
 
-    @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.Bool, False), meta={'Category': 'Math|Basic', 'Keywords': []})
-    ## Is two integers equal
-    def isequal(a=(DataTypes.Any, 0,{"constraint":"1"}), b=(DataTypes.Any, 0,{"constraint":"1"})):
-        '''
-        Ints equal
-        '''
-        return a == b
-
-    @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.Bool, False), meta={'Category': 'Math|Basic', 'Keywords': []})
-    ## Is a > b
-    def isGreater(a=(DataTypes.Any, 0,{"constraint":"1"}), b=(DataTypes.Any, 0,{"constraint":"1"})):
-        '''
-        Is a > b
-        '''
-        print a
-        print b
-        return a > b
-
-    @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.Bool, False), meta={'Category': 'Math|Basic', 'Keywords': []})
-    ## Is a >= b
-    def isGreaterOrEqual(a=(DataTypes.Any, 0,{"constraint":"1"}), b=(DataTypes.Any, 0,{"constraint":"1"})):
-        '''
-        Is a >= b
-        '''
-        return a >= b
-
-    @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.Bool, False), meta={'Category': 'Math|Basic', 'Keywords': []})
-    ## Is a < b
-    def isLess(a=(DataTypes.Any, 0,{"constraint":"1"}), b=(DataTypes.Any, 0,{"constraint":"1"})):
-        '''
-        Is a < b
-        '''
-        return a < b
-
-    @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.Bool, False), meta={'Category': 'Math|Basic', 'Keywords': []})
-    ## Is a <= b
-    def isLessOrEqual(a=(DataTypes.Any, 0,{"constraint":"1"}), b=(DataTypes.Any, 0,{"constraint":"1"})):
-        '''
-        Is a <= b
-        '''
-        return a <= b
-
-    @staticmethod
-    @IMPLEMENT_NODE(returns=((DataTypes.Any, 0,{"constraint":"1"})), meta={'Category': 'Math|Basic', 'Keywords': ['+', 'append']})
-    ## Sum of two ints
-    def add(a=(DataTypes.Any, 0,{"constraint":"1"}), b=(DataTypes.Any, 0,{"constraint":"1"})):
-        '''
-        Sum of two ints
-        '''
-        return a + b
-
-    @staticmethod
-    @IMPLEMENT_NODE(returns=((DataTypes.Any, 0,{"constraint":"1"})), meta={'Category': 'Math|Basic', 'Keywords': ['-']})
-    ## Int substraction
-    def substract(a=(DataTypes.Any, 0,{"constraint":"1"}), b=(DataTypes.Any, 0,{"constraint":"1"})):
-        '''
-        Int substraction
-        '''
-        return a - b
-
-    @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.Float, 0.0), meta={'Category': 'Math|Int', 'Keywords': ['/']})
-    ## Integer devision
-    def divide(a=(DataTypes.Int, 0), b=(DataTypes.Int, 0), result=(DataTypes.Reference, (DataTypes.Bool, False))):
-        '''
-        Integer devision
-        '''
-        try:
-            d = a / b
-            result(True)
-            return d
-        except:
-            result(False)
-            return -1
-
-    @staticmethod
-    @IMPLEMENT_NODE(returns=((DataTypes.Any, 0,{"constraint":"1"})), meta={'Category': 'Math|Basic', 'Keywords': ['*']})
-    ## Integer multiplication
-    def mult(a=(DataTypes.Any, 0,{"constraint":"1"}), b=(DataTypes.Any, 0,{"constraint":"1"})):
-        '''
-        Integer multiplication
-        '''
-        return a * b
+   
 
     @staticmethod
     @IMPLEMENT_NODE(returns=(DataTypes.Int, 0), meta={'Category': 'Math|Int', 'Keywords': []})
@@ -197,17 +110,7 @@ class IntLib(FunctionLibraryBase):
         '''
         return clamp(Value, Min, Max)
 
-    @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.Bool, False), meta={'Category': 'Math|Int', 'Keywords': []})
-    def inRange(Value=(DataTypes.Int, 0),
-                RangeMin=(DataTypes.Int, 0),
-                RangeMax=(DataTypes.Int, 0),
-                InclusiveMin=(DataTypes.Bool, False),
-                InclusiveMax=(DataTypes.Bool, False)):
-        '''
-        Returns true if value is between Min and Max (V &gt;= Min && V &lt;= Max) If InclusiveMin is true, value needs to be equal or larger than Min, else it needs to be larger If InclusiveMax is true, value needs to be smaller or equal than Max, else it needs to be smaller
-        '''
-        return ((Value >= RangeMin) if InclusiveMin else (Value > RangeMin)) and ((Value <= RangeMax) if InclusiveMax else (Value < RangeMax))
+
 
     @staticmethod
     @IMPLEMENT_NODE(returns=(DataTypes.Int, 0), meta={'Category': 'Math|Int', 'Keywords': []})

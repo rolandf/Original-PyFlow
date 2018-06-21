@@ -17,27 +17,43 @@ class StyleSheetEditor(QtWidgets.QWidget):
 	def __init__(self,parent=None):
 		super(StyleSheetEditor, self).__init__(parent)
 		self.style = stylesheet.editableStyleSheet()
-
 		self.setLayout(QtWidgets.QVBoxLayout ())
-		self.layout().addWidget(QtWidgets.QLabel("Main Color Hue"))
-		self.hueSat = pc_HueSlider(self)
-		self.hueSat.valueChanged.connect(self.updateHue)        
-		self.layout().addWidget(self.hueSat)
+		self.mainGroup = QtWidgets.QGroupBox(self)
+		self.mainGroupLay = QtWidgets.QVBoxLayout(self.mainGroup)
+		mainLabel = QtWidgets.QLabel("Main Color Hue",parent =self.mainGroup)
+		self.main_hue = pc_HueSlider(self.mainGroup)
+		self.main_hue.valueChanged.connect(self.updateHue)        
+		self.main_light = pc_GradientSlider(self.mainGroup)
+		self.main_light.valueChanged.connect(self.updateLight)
+		self.mainGroupLay.addWidget(mainLabel)
+		self.mainGroupLay.addWidget(self.main_hue)
+		self.mainGroupLay.addWidget(self.main_light)
 		self.bgColor = pc_GradientSlider(self)
-		self.bgColor.setValue(0.1960784313725490196078431372549)
 		self.bgColor.valueChanged.connect(self.updateBg)
+		self.layout().addWidget(self.mainGroup)
 		self.layout().addWidget(self.bgColor)
 
-		self.setColor(self.style.ORANGE1)
+		self.setColor(self.style.MainColor)
+		self.bgColor.setValue(0.196)
+		self.main_light.setValue(self.MainColor.lightnessF())
+
 	def setColor(self,color):
-		self.hueSat.setColor(color)
+		self.MainColor = color
+		self.main_hue.setColor(color)
+
 	def hue(self):
-		return self.hueSat.value()
+		return self.main_hue.value()
 	def getStyleSheet(self):
 		return self.style.getStyleSheet()
 	def updateHue(self,value):
-		self.style.setHue(self.hueSat.value())
+		self.style.setHue(self.main_hue.value())
+		self.style.setLightness(self.main_light.value())
 		self.Updated.emit()
+	def updateLight(self,value):
+		self.main_hue.setLightness(self.main_light.value())
+		self.main_hue.update()
+		self.style.setLightness(self.main_light.value())
+		self.Updated.emit()		
 	def updateBg(self,value):
 		self.style.setBg(self.bgColor.value())
 		

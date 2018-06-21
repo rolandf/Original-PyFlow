@@ -9,38 +9,12 @@ class BoolLib(FunctionLibraryBase):
 
 
     @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.Int, 0), meta={'Category': 'Math|Bool|Conversion', 'Keywords': []})
-    def boolToInt(b=(DataTypes.Bool, False)):
-        return int(b)
-
-    @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.String, ''), meta={'Category': 'Math|Bool|Conversion', 'Keywords': []})
-    def boolToString(b=(DataTypes.Bool, str(False))):
-        return str(b)
-
-    @staticmethod
     @IMPLEMENT_NODE(returns=(DataTypes.Bool, False), meta={'Category': 'Math|Bool', 'Keywords': []})
     def boolAnd(a=(DataTypes.Bool, False), b=(DataTypes.Bool, False)):
         '''
         Returns the logical AND of two values (A AND B)
         '''
         return a and b
-
-    @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.Bool, False), meta={'Category': 'Math|Bool', 'Keywords': []})
-    def boolEquals(a=(DataTypes.Bool, False), b=(DataTypes.Bool, False)):
-        '''
-        Returns true if the values are equal (A == B)
-        '''
-        return a == b
-
-    @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.Bool, False), meta={'Category': 'Math|Bool', 'Keywords': []})
-    def boolNotEquals(a=(DataTypes.Bool, False), b=(DataTypes.Bool, False)):
-        '''
-        Returns true if the values are not equal (A != B)
-        '''
-        return a != b
 
     @staticmethod
     @IMPLEMENT_NODE(returns=(DataTypes.Bool, False), meta={'Category': 'Math|Bool', 'Keywords': []})

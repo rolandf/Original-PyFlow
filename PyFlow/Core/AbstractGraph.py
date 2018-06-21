@@ -232,7 +232,7 @@ class PinBase(IPin):
         self.affected_by = []
         ## List of connections
         self.edge_list = []
-
+        self.deletable = False
         ## Access to the node
         if parent != None:
             self.parent = weakref.ref(parent)
@@ -249,7 +249,8 @@ class PinBase(IPin):
                 'direction': int(self.direction),
                 'value': self.currentData(),
                 'uuid': str(self.uid),
-                'bDirty': self.dirty
+                'bDirty': self.dirty,
+                'deletable':self.deletable
                 }
         return data
 

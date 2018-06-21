@@ -96,9 +96,10 @@ class AutoPanController(object):
         self.amount = amount
         self.autoPanDelta = QtGui.QVector2D(0.0, 0.0)
         self.beenOutside = False
-
+        self.tempnode = None
     def Tick(self, rect, pos):
         if self.bAllow:
+            print pos
             if pos.x() < 0:
                 self.autoPanDelta = QtGui.QVector2D(-self.amount, 0.0)
                 self.beenOutside = True
@@ -170,6 +171,30 @@ class SceneClass(QGraphicsScene):
         if event.mimeData().hasFormat('text/plain'):
             event.setDropAction(QtCore.Qt.MoveAction)
             event.accept()
+
+            tag, mimeText = event.mimeData().text().split('|')
+            name = self.parent().getUniqNodeName(mimeText)  
+
+            nodeTemplate = Node.jsonTemplate()
+            nodeTemplate['type'] = mimeText
+            nodeTemplate['name'] = name
+            nodeTemplate['x'] = event.scenePos().x()
+            nodeTemplate['y'] = event.scenePos().y()
+            nodeTemplate['meta']['label'] = mimeText
+            nodeTemplate['uuid'] = None
+            try:
+                self.tempnode.scene().removeItem(self.tempnode)
+            except:
+                pass
+            #self.tempnode = None
+            self.tempnode = getNodeInstance(Nodes, nodeTemplate['type'], nodeTemplate['name'], self.parent())
+            self.tempnode.isTemp = True
+            self.tempnode.update()
+            self.tempnode.postCreate(nodeTemplate)
+            self.tempnode.setPosition((self.tempnode.w/-2)+nodeTemplate['x'], nodeTemplate['y'])
+            self.addItem(self.tempnode)
+
+            #self.parent().createNode(nodeTemplate)            
         else:
             event.ignore()
 
@@ -179,7 +204,15 @@ class SceneClass(QGraphicsScene):
         # self.parent().undoStack.push(cmdSelect)
         pass
 
+
     def dropEvent(self, event):
+        if self.tempnode:
+            x = self.tempnode.scenePos().x()
+            y = self.tempnode.scenePos().y()
+            self.removeItem(self.tempnode)
+        else:
+            x = event.scenePos().x()
+            y = event.scenePos().y()          
         if event.mimeData().hasFormat('text/plain'):
             tag, mimeText = event.mimeData().text().split('|')
             name = self.parent().getUniqNodeName(mimeText)
@@ -188,8 +221,8 @@ class SceneClass(QGraphicsScene):
                 nodeTemplate = Node.jsonTemplate()
                 nodeTemplate['type'] = mimeText
                 nodeTemplate['name'] = name
-                nodeTemplate['x'] = event.scenePos().x()
-                nodeTemplate['y'] = event.scenePos().y()
+                nodeTemplate['x'] = x
+                nodeTemplate['y'] = y
                 nodeTemplate['meta']['label'] = mimeText
                 nodeTemplate['uuid'] = None
 
@@ -363,7 +396,8 @@ class NodeBoxTreeWidget(QTreeWidget):
         for node_file_name in Nodes.getNodeNames():
             node_class = Nodes.getNode(node_file_name)
             nodeCategoryPath = node_class.category()
-
+            if nodeCategoryPath == "__hiden__":
+                continue
             checkString = node_file_name + nodeCategoryPath + ''.join(node_class.keywords())
             if pattern.lower() not in checkString.lower():
                 continue
@@ -462,7 +496,8 @@ class NodesBox(QWidget):
             pass
             #print "widget window has gained focus"
         elif event.type()== QtCore.QEvent.WindowDeactivate:
-            self.hide()
+            pass
+            #self.hide()
         elif event.type()== QtCore.QEvent.FocusIn:
             pass
             #print "widget has gained keyboard focus"
@@ -478,6 +513,7 @@ MANIP_MODE_SELECT = 1
 MANIP_MODE_PAN = 2
 MANIP_MODE_MOVE = 3
 MANIP_MODE_ZOOM = 4
+MANIP_MODE_COPY = 5
 from Qt.QtWidgets import QGraphicsLinearLayout
 class GraphWidget(QGraphicsView, Graph):
 
@@ -766,7 +802,7 @@ class GraphWidget(QGraphicsView, Graph):
                         print(e)                        
                 self._current_file_name = fpath
                 self._file_name_label.setPlainText(self._current_file_name)
-                self.frame()
+                self.frameAllNodes()
                 self.undoStack.clear()
 
     def getPinByFullName(self, full_name):
@@ -778,10 +814,44 @@ class GraphWidget(QGraphicsView, Graph):
             if Pin:
                 return Pin
 
-    def frame(self):
-        nodes_rect = self.getNodesRect()
-        if nodes_rect:
-            self.centerOn(nodes_rect.center())
+    def frameNodes(self, nodesRect):
+        if nodesRect == None:
+            return
+        def computeWindowFrame():
+            windowRect = self.rect()
+            #windowRect.setLeft(windowRect.left() + 16)
+            #windowRect.setRight(windowRect.right() - 16)
+            #windowRect.setTop(windowRect.top() + 16)
+            #windowRect.setBottom(windowRect.bottom() - 16)
+            return windowRect
+
+        windowRect = computeWindowFrame()
+
+        scaleX = float(windowRect.width()) / float(nodesRect.width())
+        scaleY = float(windowRect.height()) / float(nodesRect.height())
+        if scaleY > scaleX:
+            scale = scaleX
+        else:
+            scale = scaleY
+
+        if scale < 1.0:
+            self.setTransform(QtGui.QTransform.fromScale(scale, scale))
+        else:
+            self.setTransform(QtGui.QTransform())
+
+        sceneRect = self.sceneRect()
+        pan = sceneRect.center() - nodesRect.center()
+        sceneRect.translate(-pan.x(), -pan.y())
+        self.setSceneRect(sceneRect)
+
+        # Update the main panel when reframing.
+        self.update()
+
+    def frameSelectedNodes(self):
+        self.frameNodes(self.getNodesRect(True))
+
+    def frameAllNodes(self):
+        self.frameNodes(self.getNodesRect())
 
     def getNodesRect(self, selected=False):
         rectangles = []
@@ -792,11 +862,12 @@ class GraphWidget(QGraphicsView, Graph):
                                                       n.scenePos().y() + float(n.h)))
                 rectangles.append([n_rect.x(), n_rect.y(), n_rect.bottomRight().x(), n_rect.bottomRight().y()])
         else:
-            for n in self.getNodes():
-                n_rect = QtCore.QRectF(n.scenePos(),
-                                       QtCore.QPointF(n.scenePos().x() + float(n.w),
-                                                      n.scenePos().y() + float(n.h)))
-                rectangles.append([n_rect.x(), n_rect.y(), n_rect.bottomRight().x(), n_rect.bottomRight().y()])
+            for n in self.getNodes() :
+                if n.name != "__scene_inputs__":
+                    n_rect = QtCore.QRectF(n.scenePos(),
+                                           QtCore.QPointF(n.scenePos().x() + float(n.w),
+                                                          n.scenePos().y() + float(n.h)))
+                    rectangles.append([n_rect.x(), n_rect.y(), n_rect.bottomRight().x(), n_rect.bottomRight().y()])
 
         arr1 = [i[0] for i in rectangles]
         arr2 = [i[2] for i in rectangles]
@@ -823,8 +894,7 @@ class GraphWidget(QGraphicsView, Graph):
 
     def keyPressEvent(self, event):
         modifiers = event.modifiers()
-        if all([event.key() == QtCore.Qt.Key_N, modifiers == QtCore.Qt.ControlModifier]):
-            self.new_file()
+
         if all([event.key() == QtCore.Qt.Key_C, modifiers == QtCore.Qt.NoModifier]):
             if self.isShortcutsEnabled():
                 # create comment node
@@ -854,7 +924,6 @@ class GraphWidget(QGraphicsView, Graph):
                     instance.rect.setBottom(rect.height())
                     instance.label().width = rect.width()
                     instance.label().adjustSizes()
-
         if all([event.key() == QtCore.Qt.Key_Left, modifiers == QtCore.Qt.ControlModifier | QtCore.Qt.ShiftModifier]):
             self.alignSelectedNodes(Direction.Left)
             return
@@ -867,23 +936,24 @@ class GraphWidget(QGraphicsView, Graph):
         if all([event.key() == QtCore.Qt.Key_Down, modifiers == QtCore.Qt.ControlModifier | QtCore.Qt.ShiftModifier]):
             self.alignSelectedNodes(Direction.Down)
             return
-
         if all([event.key() == QtCore.Qt.Key_Z, modifiers == QtCore.Qt.ControlModifier]):
             if self.isShortcutsEnabled():
                 self.undoStack.undo()
         if all([event.key() == QtCore.Qt.Key_Y, modifiers == QtCore.Qt.ControlModifier]):
             if self.isShortcutsEnabled():
                 self.undoStack.redo()
-        if all([event.key() == QtCore.Qt.Key_R, modifiers == QtCore.Qt.ControlModifier]):
-            self.reset_scale()
-        if all([event.key() == QtCore.Qt.Key_S, modifiers == QtCore.Qt.ControlModifier]):
-            self.save()
+        if all([event.key() == QtCore.Qt.Key_N, modifiers == QtCore.Qt.ControlModifier]):
+            self.new_file()            
         if all([event.key() == QtCore.Qt.Key_O, modifiers == QtCore.Qt.ControlModifier]):
             self.load()
+        if all([event.key() == QtCore.Qt.Key_S, modifiers == QtCore.Qt.ControlModifier]):
+            self.save()            
         if all([event.key() == QtCore.Qt.Key_S, modifiers == QtCore.Qt.ControlModifier | QtCore.Qt.ShiftModifier]):
             self.save_as()
-        if all([event.key() == QtCore.Qt.Key_F, modifiers == QtCore.Qt.ControlModifier]):
-            self.frame()
+        if all([event.key() == QtCore.Qt.Key_F, modifiers == QtCore.Qt.NoModifier]):
+            self.frameSelectedNodes()
+        if all([event.key() == QtCore.Qt.Key_G, modifiers == QtCore.Qt.NoModifier]):
+            self.frameAllNodes()            
         if event.key() == QtCore.Qt.Key_Delete:
             self.killSelectedNodes()
         if all([event.key() == QtCore.Qt.Key_D, modifiers == QtCore.Qt.ControlModifier]):
@@ -940,10 +1010,9 @@ class GraphWidget(QGraphicsView, Graph):
             elif e.source().parent() not in oldNodes and e.source().dataType != DataTypes.Exec:
                 fullEdges.append({"full":False,"sourcenode":e.source().parent().name,"sourcePin":e.source().name,"destinationNode":e.destination().parent().name,"destinationPin":e.destination().name})
         ret = {"nodes":nodes,"edges":fullEdges}             
-
         QApplication.clipboard().setText(str(ret))
 
-    def pasteNodes(self):
+    def pasteNodes(self,move=True):
         
         try:
             nodes = ast.literal_eval(QApplication.clipboard().text())
@@ -966,7 +1035,8 @@ class GraphWidget(QGraphicsView, Graph):
             n = self.createNode(node)
             newNodes[oldName]=n
             n.setSelected(True)
-            n.setPos(n.scenePos() + diff)
+            if move:
+                n.setPos(n.scenePos() + diff)
         for edge in nodes["edges"]:
             if edge["full"]:
                 nsrc = newNodes[edge["sourcenode"]].getPinByName(edge["sourcePin"])
@@ -1065,12 +1135,14 @@ class GraphWidget(QGraphicsView, Graph):
     def mousePressEvent(self, event):    
         node = None
         self.pressed_item = self.itemAt(event.pos())
+        modifiers = event.modifiers()
         if not self.pressed_item or self.nodeFromInstance(self.pressed_item) == self.inputsItem and not isinstance(self.pressed_item, PinBase):
             if event.button() == QtCore.Qt.LeftButton:
                 self._manipulationMode = MANIP_MODE_SELECT
                 self._selectionRect = SelectionRect(graph=self, mouseDownPos=self.mapToScene(event.pos()))
                 self._mouseDownSelection = self.selectedNodes()
-                super(GraphWidget, self).mousePressEvent(event)
+                if modifiers not in  [QtCore.Qt.ShiftModifier,QtCore.Qt.ControlModifier]:
+                    super(GraphWidget, self).mousePressEvent(event)
             elif event.button() == QtCore.Qt.MiddleButton or event.button() == QtCore.Qt.MiddleButton and modifiers == QtCore.Qt.NoModifier:
                 self.viewport().setCursor(QtCore.Qt.OpenHandCursor)
                 self._manipulationMode = MANIP_MODE_PAN
@@ -1111,10 +1183,6 @@ class GraphWidget(QGraphicsView, Graph):
                         node = self.nodeFromInstance(self.pressed_item)
                         if node.bResize:
                             return
-
-                    if (event.button() == QtCore.Qt.MidButton or event.button() == QtCore.Qt.LeftButton):
-                        self._manipulationMode = MANIP_MODE_MOVE
-                        self._lastDragPoint =self.mapToScene(event.pos())
                     if event.button() == QtCore.Qt.MidButton:    
                         if modifiers != QtCore.Qt.ShiftModifier:
                             self.clearSelection()
@@ -1123,16 +1191,26 @@ class GraphWidget(QGraphicsView, Graph):
                         selectedNodes = self.selectedNodes()    
                         if len(selectedNodes) > 0:                               
                             for node in  selectedNodes:
-                                compute_order = self.getEvaluationOrder(node)                                     
-                                for layer in reversed(sorted([i for i in compute_order.keys()])):
-                                    for n in compute_order[layer]:
-                                        n.setSelected(True)
+                                for n in node.getChainedNodes():
+                                    n.setSelected(True)
                                 node.setSelected(True)
                                 if isinstance(node,Nodes.commentNode.commentNode):
                                     for n in node.nodesToMove:
                                         n.setSelected(True)
                     else:
                         self.pressed_item.setSelected(True)
+
+                    if all([(event.button() == QtCore.Qt.MidButton or event.button() == QtCore.Qt.LeftButton ), modifiers == QtCore.Qt.NoModifier]):
+                        self._manipulationMode = MANIP_MODE_MOVE
+                        self._lastDragPoint =self.mapToScene(event.pos())
+                    elif all([(event.button() == QtCore.Qt.MidButton or event.button() == QtCore.Qt.LeftButton ), modifiers == QtCore.Qt.AltModifier]):
+                        self._manipulationMode = MANIP_MODE_MOVE
+                        self._lastDragPoint =self.mapToScene(event.pos())
+                        selectedNodes = self.selectedNodes()    
+                        newNodes = []
+                        self.copyNodes()
+                        self.pasteNodes(False)
+
 
     def mouseMoveEvent(self, event):
 
@@ -1200,6 +1278,8 @@ class GraphWidget(QGraphicsView, Graph):
             delta = newPos - self._lastDragPoint
             self._lastDragPoint = self.mapToScene(event.pos())
             selectedNodes = self.selectedNodes()
+            nodeOut = False
+            direction = 0
             # Apply the delta to each selected node
             for node in selectedNodes:
                 if node != self.inputsItem:
@@ -1208,6 +1288,11 @@ class GraphWidget(QGraphicsView, Graph):
                             if not n.isSelected():
                                 n.translate(delta.x(), delta.y())
                     node.translate(delta.x(), delta.y())
+
+            if nodeOut:
+                rect = self.sceneRect()
+                rect.translate(delta.x(), delta.y())
+                self.setSceneRect(rect)
 
         elif self._manipulationMode == MANIP_MODE_PAN:
             delta = self.mapToScene(event.pos()) - self._lastPanPoint
@@ -1254,7 +1339,6 @@ class GraphWidget(QGraphicsView, Graph):
 
             # Call udpate to redraw background
             self.update()
-
 
         else:
             super(GraphWidget, self).mouseMoveEvent(event)

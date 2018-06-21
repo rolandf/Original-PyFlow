@@ -42,16 +42,10 @@ class Vector3(FunctionLibraryBase):
         return pyrr.Vector3(arrV3)
 
     @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.Bool, True), nodeType=NodeTypes.Pure, meta={'Category': 'Math|Vector3', 'Keywords': ['lerp']})
+    @IMPLEMENT_NODE(returns=(DataTypes.FloatVector3, True), nodeType=NodeTypes.Pure, meta={'Category': 'Math|Vector3', 'Keywords': ['lerp']})
     def v3Lerp(a=(DataTypes.FloatVector3, pyrr.Vector3()), b=(DataTypes.FloatVector3, pyrr.Vector3()), alpha=(DataTypes.Float, 0.0)):
         '''Vector3 lerp'''
         return pyrr.Vector3(pyrr.vector.interpolate(a, b, clamp(alpha, 0.0, 1.0)))
-
-    @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.Bool, True), nodeType=NodeTypes.Pure, meta={'Category': 'Math|Vector3', 'Keywords': ['vector3', '==']})
-    def v3Equals(a=(DataTypes.FloatVector3, pyrr.Vector3()), b=(DataTypes.FloatVector3, pyrr.Vector3())):
-        '''Check if vectors are equals'''
-        return a == b
 
     @staticmethod
     @IMPLEMENT_NODE(returns=(DataTypes.FloatVector3, pyrr.Vector3()), nodeType=NodeTypes.Pure, meta={'Category': 'Math|Vector3', 'Keywords': ['vector3']})
@@ -59,11 +53,6 @@ class Vector3(FunctionLibraryBase):
         '''creates Vector3 from given components'''
         return pyrr.Vector3([a, b, c])
 
-    @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.Float, 0.0), nodeType=NodeTypes.Pure, meta={'Category': 'Math|Vector3', 'Keywords': ['vector3', '|']})
-    def v3Dot(a=(DataTypes.FloatVector3, pyrr.Vector3()), b=(DataTypes.FloatVector3, pyrr.Vector3())):
-        '''dot product of two vectors'''
-        return a | b
 
     @staticmethod
     @IMPLEMENT_NODE(returns=(DataTypes.FloatVector3, pyrr.Vector3()), nodeType=NodeTypes.Pure, meta={'Category': 'Math|Vector3', 'Keywords': ['vector3', '^']})

@@ -11,6 +11,23 @@ class Spacings:
 
 
 class Colors:
+
+    Orange =          QtGui.QColor(255, 160, 47)
+    OrangeLighter =   QtGui.QColor(234, 165, 83)
+    OrangeLighter2=   QtGui.QColor(255, 170, 0)
+    OrangeDarker =    QtGui.QColor(215, 128, 26)
+
+    BG_DARK =          QtGui.QColor(50, 50, 50)
+
+
+    Grey =             QtGui.QColor(64, 64, 64)
+
+    Grey1 =            QtGui.QColor(77, 77, 77)
+    Grey2 =            QtGui.QColor(100, 100, 100)
+    Grey3 =            QtGui.QColor(93, 93, 93)
+
+    GREYDARK =         QtGui.QColor(30, 30, 30)
+
     NodeBackgrounds = QtGui.QColor(80, 80, 80, 200)
     NodeSelectedPenColor = QtGui.QColor(200, 200, 200, 150)
     NodeNameRect = QtGui.QColor(80, 80, 100, 200)
@@ -22,6 +39,7 @@ class Colors:
     SplitterHandleColor = QtGui.QColor(255, 255, 255, 20)
 
     SceneBackground = QtGui.QColor(35, 35, 35)
+
     GridColor = QtGui.QColor(100, 100, 100, 100)
     GridColorDarker = QtGui.QColor(20, 20, 20)
 

@@ -118,12 +118,6 @@ class QuatLib(FunctionLibraryBase):
 
     @staticmethod
     @IMPLEMENT_NODE(returns=(DataTypes.Quaternion, pyrr.Quaternion()), meta={'Category': 'Math|Quaternion', 'Keywords': []})
-    def quatDot(q=(DataTypes.Quaternion, pyrr.Quaternion()), other=(DataTypes.Quaternion, pyrr.Quaternion())):
-        '''Returns the dot of this Quaternion and another.'''
-        return q.dot(other)
-
-    @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.Quaternion, pyrr.Quaternion()), meta={'Category': 'Math|Quaternion', 'Keywords': []})
     def quatInverse(q=(DataTypes.Quaternion, pyrr.Quaternion())):
         '''Returns the inverse of this quaternion.'''
         return q.inverse

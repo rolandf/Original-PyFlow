@@ -3,7 +3,7 @@ from ..Core.AGraphCommon import *
 
 import sys 
 sys.path.append(r"C:\Users\pedro\OneDrive\pcTools_v5\pcSequenceExplorer\modules")
-from shotgun_api3 import Shotgun
+
 
 from ..FunctionLibraries import ShotGunLib
 
@@ -23,7 +23,12 @@ class SgFilterPin(PinWidgetBase):
     @staticmethod
     def pinDataTypeHint():
         return DataTypes.SgFilter, ''
-
+        
+    # ISerializable interface
+    def serialize(self):
+        data = super(SgFilterPin, self).serialize()
+        data["value"] = None
+        return data
     def setData(self, data):
         try:
             if isinstance(data,ShotGunLib.sgFilters):

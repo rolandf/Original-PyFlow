@@ -143,8 +143,8 @@ class VariableBase(QWidget):
         template['name'] = self.name
         template['uuid'] = str(self.uid)
         template['value'] = self.value
-        template['type'] = self.dataType
-        template['accessLevel'] = self.accessLevel
+        template['type'] = int(self.dataType)
+        template['accessLevel'] = int(self.accessLevel)
         return template
 
     @staticmethod

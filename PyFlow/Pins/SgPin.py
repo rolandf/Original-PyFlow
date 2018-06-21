@@ -5,6 +5,7 @@ import sys
 sys.path.append(r"C:\Users\pedro\OneDrive\pcTools_v5\pcSequenceExplorer\modules")
 from shotgun_api3 import Shotgun
 
+
 class SgPin(PinWidgetBase):
     """doc string for SgPin"""
     def __init__(self, name, parent, dataType, direction, **kwargs):
@@ -21,6 +22,12 @@ class SgPin(PinWidgetBase):
     @staticmethod
     def pinDataTypeHint():
         return DataTypes.Sg, ''
+
+    # ISerializable interface
+    def serialize(self):
+        data = super(SgPin, self).serialize()
+        data["value"] = None
+        return data
 
     def setData(self, data):
         try:

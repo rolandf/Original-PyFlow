@@ -65,6 +65,13 @@ class PinWidgetBase(QGraphicsWidget, PinBase):
         self.constraint = None
         self.dynamic = False
         
+    def updateConstraint(self,constraint):
+        self.constraint = constraint
+        if self.parent()._Constraints.has_key(constraint):
+            self.parent()._Constraints[constraint].append(self)
+        else:
+            self.parent()._Constraints[constraint] = [self]
+                   
     def setUserStruct(self, inStruct):
         PinBase.setUserStruct(self, inStruct)
         self.userStructChanged.emit(inStruct)
@@ -129,7 +136,7 @@ class PinWidgetBase(QGraphicsWidget, PinBase):
         uid = uuid.UUID(jsonData['uuid'])
         bLabelHidden = jsonData['bLabelHidden']
         bDirty = jsonData['bDirty']
-
+        deletable = jsonData['deletable']
         p = None
         if direction == PinDirection.Input:
             p = owningNode.addInputPin(name, dataType, hideLabel=bLabelHidden)
@@ -137,7 +144,8 @@ class PinWidgetBase(QGraphicsWidget, PinBase):
         else:
             p = owningNode.addOutputPin(name, dataType, hideLabel=bLabelHidden)
             p.uid = uid
-
+        if deletable:
+            p.setDeletable()            
         p.setData(value)
         return p
 
@@ -151,6 +159,9 @@ class PinWidgetBase(QGraphicsWidget, PinBase):
 
     def get_container(self):
         return self._container
+
+    def translate(self, x, y):
+        super(PinWidgetBase, self).moveBy(x, y)
 
     def boundingRect(self):
         if not self.dataType == DataTypes.Exec:

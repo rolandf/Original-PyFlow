@@ -157,7 +157,7 @@ class WPinWidget(QWidget, PinWidget_ui.Ui_Form):
         self.editor = weakref.ref(editor)
         self.lePinName.setText('pinName')
         self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
-        self.items = [v for v in DataTypes if v not in [DataTypes.Reference, DataTypes.Enum]]
+        self.items = [v for v in DataTypes if v not in [DataTypes.Reference]]
         self.cbType.clear()
 
         for i in self.items:
@@ -173,7 +173,11 @@ class WPinWidget(QWidget, PinWidget_ui.Ui_Form):
         else:
             w.cbHideLabel.setCheckState(QtCore.Qt.Unchecked)
 
-        w.cbType.setCurrentIndex(w.cbType.findData(dataType))
+        AllItems = [w.cbType.itemData (i) for i in range(w.cbType.count())]
+        try:
+            w.cbType.setCurrentIndex(w.cbType.findData(dataType.value))
+        except:
+            w.cbType.setCurrentIndex(w.cbType.findData(dataType))
         return w
 
     def shouldHideLabel(self):

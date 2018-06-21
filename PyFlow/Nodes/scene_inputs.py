@@ -39,7 +39,7 @@ class scene_inputs(Node):
 
     @staticmethod
     def category():
-        return 'GenericTypes'
+        return '__hiden__'
 
     @staticmethod
     def keywords():

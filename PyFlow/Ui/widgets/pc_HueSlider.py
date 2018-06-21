@@ -27,27 +27,27 @@ class pc_HueSlider(pc_DoubleSlider):
         self.color = QtGui.QColor()
         self.color.setHslF(0, 1,0.5, 1)
         self.defColor = self.color.name()
-        
-
         self.setOrientation(QtCore.Qt.Horizontal)
         self.setStyleSheet(styleSheet)
         self.setMouseTracking(True)
-
+        self.light = 0.5
     def setColor(self,color):
         if isinstance(color,QtGui.QColor):
             self.color = color
             self.defColor = self.color.name()
             self.update()
-
+    def setLightness(self,light):
+        self.light = light
+        
     def getColor(self):
         return self.getHue(self.value())
 
     def getHue(self,hue):
         c = QtGui.QColor(self.defColor)
         h,s,l,a = c.getHslF()
-        c.setHslF((h+hue)%1, s, l, a)
+        c.setHslF((h+hue)%1, s, self.light, a)
         return c
-        
+    
 
     def paintEvent(self, event):
 
@@ -72,10 +72,14 @@ class pc_HueSlider(pc_DoubleSlider):
     def mousePressEvent(self,event):
         if event.button() == QtCore.Qt.LeftButton:
             butts = QtCore.Qt.MouseButtons(QtCore.Qt.MidButton)
-            nevent = QtGui.QMouseEvent(event.type(),event.pos(),event.globalPos(),4,butts,event.modifiers())
-            super(pc_HueSlider, self).mousePressEvent(nevent)
-        else:
-            super(pc_HueSlider, self).mousePressEvent(event)
+            try:##maya PySide?
+                nevent = QtGui.QMouseEvent(event.type(),QtCore.QPointF(event.pos()),QtCore.QPointF(event.globalPos()),QtCore.Qt.MidButton,butts,event.modifiers())
+                print "he"
+            except:
+                nevent = QtGui.QMouseEvent(event.type(),event.pos(),event.globalPos(),QtCore.Qt.MidButton,butts,event.modifiers())
+                super(pc_HueSlider, self).mousePressEvent(nevent)
+        #else:
+        super(pc_HueSlider, self).mousePressEvent(event)
 
 
 class pc_GradientSlider(pc_DoubleSlider):
@@ -123,10 +127,14 @@ class pc_GradientSlider(pc_DoubleSlider):
     def mousePressEvent(self,event):
         if event.button() == QtCore.Qt.LeftButton:
             butts = QtCore.Qt.MouseButtons(QtCore.Qt.MidButton)
-            nevent = QtGui.QMouseEvent(event.type(),event.pos(),event.globalPos(),4,butts,event.modifiers())
+            try:##maya PySide?
+                nevent = QtGui.QMouseEvent(event.type(),QtCore.QPointF(event.pos()),QtCore.QPointF(event.globalPos()),QtCore.Qt.MidButton,butts,event.modifiers())
+                print "he"
+            except:
+                nevent = QtGui.QMouseEvent(event.type(),event.pos(),event.globalPos(),QtCore.Qt.MidButton,butts,event.modifiers())
             super(pc_GradientSlider, self).mousePressEvent(nevent)
-        else:
-            super(pc_GradientSlider, self).mousePressEvent(event)
+        #else:
+        super(pc_GradientSlider, self).mousePressEvent(event)
 
         
 class testWidg(QtWidgets.QWidget):

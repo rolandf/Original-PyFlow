@@ -76,6 +76,8 @@ class NodeName(QGraphicsTextItem):
     def boundingRect(self):
         return QtCore.QRectF(0, 0, self.width + 5.0, self.h)
 
+
+
     def paint(self, painter, option, widget):
         r = QtCore.QRectF(option.rect)
         r.setWidth(self.parentItem().childrenBoundingRect().width() -1)
@@ -170,7 +172,7 @@ class Node(QGraphicsItem, NodeBase):
 
         self._Constraints = {}
         self.asGraphSides = False
-
+        self.isTemp = False
         
     @staticmethod
     def recreate(node):
@@ -326,7 +328,9 @@ class Node(QGraphicsItem, NodeBase):
         node = graph.createNode(data)
         node.uid = uuid.UUID(data['uuid'])
         node.currentComputeCode = data['computeCode']
-
+        if "hidden" in data["meta"]:
+            if data["meta"]["hidden"]:
+                node.hide()
         # set pins data
         for inpJson in data['inputs']:
             pin = node.getPinByName(inpJson['name'], PinSelectionGroup.Inputs)
@@ -352,9 +356,16 @@ class Node(QGraphicsItem, NodeBase):
         self.setX(roundup(value.x() - self.graph().grid_size, self.graph().grid_size))
         self.setY(roundup(value.y() - self.graph().grid_size, self.graph().grid_size))
 
+    #########################
+    ## Graph Pos
+
+    def translate(self, x, y):
+        super(Node, self).moveBy(x, y)
+
     def boundingRect(self):
         rect = self.childrenBoundingRect()
         return rect
+        
     def itemChange(self, change, value):
         #if change == self.ItemPositionChange:
         #    # grid snapping
@@ -442,6 +453,7 @@ class Node(QGraphicsItem, NodeBase):
         template['inputs'] = [i.serialize() for i in self.inputs.values()]
         template['outputs'] = [o.serialize() for o in self.outputs.values()]
         template['meta']['label'] = self.label().toPlainText()
+        template["meta"]["hidden"] = not self.isVisible()
         return template
 
     def propertyView(self):
@@ -464,10 +476,20 @@ class Node(QGraphicsItem, NodeBase):
         new_node = self.graph().createNode(templ)
         return new_node
 
-      
+    def getChainedNodes(self):
+        nodes = []
+        for pin in self.inputs.values():
+            for edge in pin.edge_list:
+                node =  edge.source().parent()
+                nodes.append(node)
+                nodes += node.getChainedNodes()
+        return nodes
+
 
     def paint(self, painter, option, widget):
+        self.updateConstraints()
         NodePainter.default(self, painter, option, widget)
+
 
     def mousePressEvent(self, event):
         self.update()
@@ -526,28 +548,29 @@ class Node(QGraphicsItem, NodeBase):
 
         # inputs
         if len([i for i in self.inputs.values()]) != 0:
-            sep_inputs = QLabel()
-            sep_inputs.setStyleSheet("background-color: black;")
-            sep_inputs.setText("INPUTS")
-            formLayout.addRow("", sep_inputs)
+            #sep_inputs = QLabel()
+            #sep_inputs.setStyleSheet("color: green;")
+            #sep_inputs.setText("INPUTS")
+            #formLayout.addRow("", sep_inputs)
 
             for inp in self.inputs.values():
                 dataSetter = inp.call if inp.dataType == DataTypes.Exec else inp.setData
-                w = getInputWidget(inp.dataType, dataSetter, inp.defaultValue(), inp.getUserStruct())
-                if w:
-                    w.setWidgetValue(inp.currentData())
-                    w.setObjectName(inp.getName())
-                    formLayout.addRow(inp.name, w)
-                    if inp.hasConnections():
-                        w.setEnabled(False)
-                        w.hide()
+                if not inp.hasConnections():
+                    w = getInputWidget(inp.dataType, dataSetter, inp.defaultValue(), inp.getUserStruct())
+                    if w:
+                        w.setWidgetValue(inp.currentData())
+                        w.setObjectName(inp.getName())
+                        formLayout.addRow(inp.name, w)
+                        if inp.hasConnections():
+                            w.setEnabled(False)
+                            w.hide()
         if self.asGraphSides:
             # outputs
             if len([i for i in self.outputs.values()]) != 0:
-                sep_outputs = QLabel()
-                sep_outputs.setStyleSheet("background-color: black;")
-                sep_outputs.setText("OUTPUTS")
-                formLayout.addRow("", sep_outputs)
+                #sep_outputs = QLabel()
+                #sep_outputs.setStyleSheet("color: yellow;")
+                #sep_outputs.setText("OUTPUTS")
+                #formLayout.addRow("", sep_outputs)
                 for out in self.outputs.values():
                     #if out.dataType == DataTypes.Exec:
                     #    continue
@@ -606,6 +629,15 @@ class Node(QGraphicsItem, NodeBase):
         pin = node.getPinByName(name)
         if pin:
             pin.kill()
+
+    def updateConstraints(self):
+        self._Constraints = {}
+        for pin in self.inputs.values() + self.outputs.values():
+            if pin.constraint != None:
+                if self._Constraints.has_key(pin.constraint):
+                    self._Constraints[pin.constraint].append(pin)
+                else:
+                    self._Constraints[pin.constraint] = [pin]
 
     def _addPin(self, pinDirection, dataType, foo, hideLabel=False, bCreateInputWidget=True, name='', index=-1, userStructClass=ENone, defaultValue=None,constraint=None,allowedPins=None):
         # check if pins with this name already exists and get uniq name
