@@ -97,7 +97,9 @@ class ExecInputWidget(InputWidgetSingle):
         self.setWidget(self.pb)
         self.pb.clicked.connect(self.dataSetCallback)
         self.pbReset.deleteLater()
-
+    def setObjectName(self,name):
+        super(ExecInputWidget, self).setObjectName(name)
+        self.pb.setText(name.split(".")[-1])
 
 class EnumInputWidget(InputWidgetSingle):
     """

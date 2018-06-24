@@ -63,3 +63,18 @@ class Ui_Form(object):
 
 from .. import nodes_res_rc
 
+if __name__ == '__main__':
+    from Qt.QtWidgets import QApplication,QStyleFactory
+    import sys
+
+
+
+    app = QApplication(sys.argv)
+
+    app.setStyle(QStyleFactory.create("plastique"))
+    wm = QtWidgets.QDialog()
+    w = Ui_Form()
+    w.setupUi(wm)
+    wm.show()
+
+    sys.exit(app.exec_())

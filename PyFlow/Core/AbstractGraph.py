@@ -246,6 +246,7 @@ class PinBase(IPin):
     def serialize(self):
         data = {'name': self.name,
                 'dataType': int(self.origDataType),
+                'curr_dataType': int(self.dataType),
                 'direction': int(self.direction),
                 'value': self.currentData(),
                 'uuid': str(self.uid),
@@ -477,7 +478,7 @@ class NodeBase(INode):
         while tmp in pinNames:
             idx += 1
             tmp = name + str(idx)
-        return name + str(idx)
+        return name +"_"+ str(idx)
 
     def getPinByUUID(self, uid):
         if uid in self.inputs:
@@ -681,18 +682,18 @@ class Graph(object):
             return False
 
         if dst.constraint != None:
-            if dst.dataType != DataTypes.Any:
+            if dst.dataType != DataTypes.Any:               
                 from ..Pins import CreatePin
-                from ..Pins.AnyPin import AnyPin                
+                from ..Pins.AnyPin import AnyPin 
                 cheked = []
                 if isinstance(dst,AnyPin):
-                    free = dst.checkFree(cheked,False)
+                    free = dst.checkFree([],False)
                     if not free:
                         a = CreatePin("", None, dst.dataType, 0)
                         if src.dataType not in a.supportedDataTypes():
                             print("[{0}] is not conmpatible with [{1}]".format(getDataTypeName(src.dataType), getDataTypeName(dst.dataType)))
                             return False
-                        del a
+                        del a                     
         return True
 
     def addEdge(self, src, dst):

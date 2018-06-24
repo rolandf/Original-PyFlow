@@ -5,8 +5,6 @@ import sys
 import os
 import ast
 
-
-
 from shotgun_api3 import Shotgun
 
 ca_certs = os.path.join(r"C:\Users\pedro\OneDrive\pcTools_v5\pcSequenceExplorer\modules", 'shotgun_api3','lib','httplib2', 'cacerts.txt')

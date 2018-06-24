@@ -15,7 +15,7 @@ class PinWidgetBase(QGraphicsWidget, PinBase):
     '''
 
     ## Event called when pin is connected
-    OnPinConnected = QtCore.Signal(object)
+    OnPinConnected = QtCore.Signal(object)   
     ## Event called when pin is disconnected
     OnPinDisconnected = QtCore.Signal(object)
     ## Event called when data been set
@@ -25,7 +25,10 @@ class PinWidgetBase(QGraphicsWidget, PinBase):
     ## Event called when setUserStruct called
     # used by enums
     userStructChanged = QtCore.Signal(object)
-
+    ## Event called when pin is deleted
+    OnPinDeleted = QtCore.Signal(object)
+    ## Event called when pin is deleted
+    OnPinChanged = QtCore.Signal(object)    
     def __init__(self, name, parent, dataType, direction, **kwargs):
         QGraphicsWidget.__init__(self)
         PinBase.__init__(self, name, parent, dataType, direction, **kwargs)
@@ -37,8 +40,8 @@ class PinWidgetBase(QGraphicsWidget, PinBase):
         self.actionDisconnect = self.menu.addAction('disconnect all')
         self.actionDisconnect.triggered.connect(self.disconnectAll)
         ## Copy UUID to buffer
-        #self.actionCopyUid = self.menu.addAction('copy uid')
-        #self.actionCopyUid.triggered.connect(self.saveUidToClipboard)
+        self.actionCopyUid = self.menu.addAction('copy uid')
+        self.actionCopyUid.triggered.connect(self.saveUidToClipboard)
 
         ## Call exec pin
         self.actionCall = self.menu.addAction('execute')
@@ -64,6 +67,7 @@ class PinWidgetBase(QGraphicsWidget, PinBase):
         self._val = 0
         self.constraint = None
         self.dynamic = False
+        self._isEditable = False
         
     def updateConstraint(self,constraint):
         self.constraint = constraint
@@ -79,7 +83,7 @@ class PinWidgetBase(QGraphicsWidget, PinBase):
     def setDeletable(self):
         self.deletable = True
         self.actionRemove = self.menu.addAction('remove')
-        self.actionRemove.triggered.connect(self.kill)        
+        self.actionRemove.triggered.connect(self.kill)
 
     def setName(self, newName):
         super(PinWidgetBase, self).setName(newName)
@@ -88,7 +92,15 @@ class PinWidgetBase(QGraphicsWidget, PinBase):
     def setData(self, value):
         PinBase.setData(self, value)
         self.dataBeenSet.emit(value)
-
+    @property
+    def dataType(self):
+        return self._dataType
+    @dataType.setter
+    def dataType(self, value):
+        self._dataType = value
+        
+    def setDataType(self,value):
+        self.dataType = value
     def highlight(self):
         self.bAnimate = True
         t = QtCore.QTimeLine(900, self)
@@ -115,6 +127,7 @@ class PinWidgetBase(QGraphicsWidget, PinBase):
         PinBase.call(self)
 
     def kill(self):
+        self.OnPinDeleted.emit(self)
         PinBase.kill(self)
         self.disconnectAll()
         if hasattr(self.parent(), self.name):
@@ -125,9 +138,11 @@ class PinWidgetBase(QGraphicsWidget, PinBase):
                 self.parent().inputsLayout.removeItem(self._container)
             else:
                 self.parent().outputsLayout.removeItem(self._container)
+        #print self.parent().outputs
 
     @staticmethod
     def deserialize(owningNode, jsonData):
+
         name = jsonData['name']
         dataType = jsonData['dataType']
 
@@ -137,21 +152,32 @@ class PinWidgetBase(QGraphicsWidget, PinBase):
         bLabelHidden = jsonData['bLabelHidden']
         bDirty = jsonData['bDirty']
         deletable = jsonData['deletable']
+        if 'editable' in jsonData:
+            editable = jsonData['editable']
+        else:
+            editable = False
         p = None
         if direction == PinDirection.Input:
-            p = owningNode.addInputPin(name, dataType, hideLabel=bLabelHidden)
+            p = owningNode.addInputPin(name, dataType, hideLabel=bLabelHidden,editable=editable)
             p.uid = uid
         else:
-            p = owningNode.addOutputPin(name, dataType, hideLabel=bLabelHidden)
+            p = owningNode.addOutputPin(name, dataType, hideLabel=bLabelHidden,editable=editable)
             p.uid = uid
         if deletable:
-            p.setDeletable()            
+            p.setDeletable() 
+        if "curr_dataType" in jsonData and jsonData["curr_dataType"] != dataType:
+            from ..Pins import CreatePin
+            a = CreatePin("", None, jsonData["curr_dataType"], 0)
+            p.setType(a)
+            del a            
+            
         p.setData(value)
         return p
 
     def serialize(self):
         data = PinBase.serialize(self)
         data['bLabelHidden'] = self.bLabelHidden
+        data["editable"] = self._isEditable
         return data
 
     def ungrabMouseEvent(self, event):
@@ -160,8 +186,8 @@ class PinWidgetBase(QGraphicsWidget, PinBase):
     def get_container(self):
         return self._container
 
-    def translate(self, x, y):
-        super(PinWidgetBase, self).moveBy(x, y)
+    #def translate(self, x, y):
+    #    super(PinWidgetBase, self).moveBy(x, y)
 
     def boundingRect(self):
         if not self.dataType == DataTypes.Exec:

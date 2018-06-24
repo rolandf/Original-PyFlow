@@ -10,7 +10,6 @@ SETTINGS_PATH = FILE_DIR + "PyFlow/appConfig.ini"
 
 app = QApplication(sys.argv)
 
-
 app.setStyle(QStyleFactory.create("plastique"))
 
 instance = PyFlow.instance()

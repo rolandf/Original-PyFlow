@@ -4,9 +4,8 @@ import os
 
 from Qt.QtWidgets import QFileDialog
 import sys 
-sys.path.append(r"C:\Users\pedro\OneDrive\pcTools_v5\pcSequenceExplorer\modules")
+#sys.path.append(r"C:\Users\pedro\OneDrive\pcTools_v5\pcSequenceExplorer\modules")
 from pcSeq import get_sequences
-
 class pcLib(FunctionLibraryBase):
     '''
     Default library builting stuff, variable types and conversions

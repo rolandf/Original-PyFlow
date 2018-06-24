@@ -8,11 +8,11 @@ from Qt import QtCore
 supportedDataTypesList = tuple([x for x in DataTypes])
 
 class sender(QtCore.QObject):
-    pinCreated = QtCore.Signal(object)   
-
-class scene_inputs(Node):
+    pinCreated = QtCore.Signal(object)  
+     
+class scene_outputs(Node):
     def __init__(self, name, graph):
-        super(scene_inputs, self).__init__(name, graph)
+        super(scene_outputs, self).__init__(name, graph)
         self.menu = QMenu()
         self.action = self.menu.addAction('add port')
         self.action.triggered.connect(self.addInPin)
@@ -20,19 +20,18 @@ class scene_inputs(Node):
         self.asGraphSides = True
         self.sizes[4] = 0
         self.sizes[5] = 0
-
+        self.inOuts = []
         self.setFlag(QGraphicsItem.ItemIsMovable,False)
         self.setFlag(QGraphicsItem.ItemIsFocusable,False)
         self.setFlag(QGraphicsItem.ItemIsSelectable,False)
         self.setFlag(QGraphicsItem.ItemSendsGeometryChanges,False)
-        
+        self.bCallable = True
         #self.setFlag(QGraphicsItem.ItemIgnoresTransformations)
-        self.label().hide() 
-        self.sender = sender()    
+        self.label().hide()     
+        self.sender = sender()
     def addInPin(self):
-        const = len(self.outputs)+1
-        p = self.addOutputPin("input_%i"%const, DataTypes.Any,editable=True)
-        #p.dynamic = True
+        const = len(self.inputs)+1
+        p = self.addInputPin("output_%i"%const, DataTypes.Any,editable=True)
         p.setDeletable()
         self.sender.pinCreated.emit(p)
 
@@ -53,19 +52,22 @@ class scene_inputs(Node):
 
     @staticmethod
     def description():
-        return 'Genertic array'
+        return 'Scene Outputs'
+
 
     def postCreate(self, jsonTemplate):
         Node.postCreate(self, jsonTemplate)
 
         # restore dynamically created inputs
-        for inp in jsonTemplate['outputs']:
+        for inp in jsonTemplate['inputs']:
             PinWidgetBase.deserialize(self, inp)
+        for inp in jsonTemplate['outputs']:
+            PinWidgetBase.deserialize(self, inp)            
             #pinAffects(p, self.out0)
     def boundingRect(self):
         rect = self.childrenBoundingRect()
         rect.setHeight(self.graph().boundingRect.height())
-        self.setPos(self.graph().boundingRect.topLeft().x(),self.graph().boundingRect.topLeft().y()+50)
+        self.setPos(self.graph().boundingRect.topRight().x()-rect.width(),self.graph().boundingRect.topRight().y()+50)
         #rect.setWidth(self.graph().boundingRect.width()/30)
         return rect         
     def paint(self, painter, option, widget):

@@ -37,7 +37,7 @@ class NodePainter(object):
         painter.setBrush(br)
         pen = QtGui.QPen(QtCore.Qt.black, 0.5)
         if option.state & QStyle.State_Selected:
-            pen.setColor(node.graph().window().styleSheetEditor.style.MainColor)
+            pen.setColor(node.graph().parent.styleSheetEditor.style.MainColor)
             pen.setStyle(node.opt_pen_selected_type)
         painter.setPen(pen)
         rect = node.childrenBoundingRect()
@@ -59,6 +59,6 @@ class NodePainter(object):
         linearGrad.setColorAt(1, color.lighter(180))
         br = QtGui.QBrush(linearGrad)
         painter.setBrush(br)
-        pen = QtGui.QPen(node.graph().window().styleSheetEditor.style.MainColor, 0.5)
+        pen = QtGui.QPen(node.graph().parent.styleSheetEditor.style.MainColor, 0.5)
         painter.setPen(pen)
         painter.drawRoundedRect(node.boundingRect(), node.sizes[4], node.sizes[5])

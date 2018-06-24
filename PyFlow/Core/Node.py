@@ -29,6 +29,7 @@ from .InputWidgets import getInputWidget
 from inspect import getargspec
 from NodePainter import NodePainter
 from Enums import ENone
+from ..Ui.widgets.pc_editableLabel import EditableLabel
 
 
 class NodeName(QGraphicsTextItem):
@@ -324,14 +325,16 @@ class Node(QGraphicsItem, NodeBase):
         return inst
 
     @staticmethod
+    ## Constructs a node from given annotated function and adds it to the canvas
+    def initializeFromSubgraph(jsonData, graph):
+
+        return inst
+
+    @staticmethod
     def deserialize(data, graph):
         node = graph.createNode(data)
         node.uid = uuid.UUID(data['uuid'])
         node.currentComputeCode = data['computeCode']
-        if "hidden" in data["meta"]:
-            if data["meta"]["hidden"]:
-                node.hide()
-        # set pins data
         for inpJson in data['inputs']:
             pin = node.getPinByName(inpJson['name'], PinSelectionGroup.Inputs)
             pin.uid = uuid.UUID(inpJson['uuid'])
@@ -367,12 +370,6 @@ class Node(QGraphicsItem, NodeBase):
         return rect
         
     def itemChange(self, change, value):
-        #if change == self.ItemPositionChange:
-        #    # grid snapping
-        #    value.setX(roundup(value.x() - self.graph().grid_size + self.graph().grid_size / 3.0, self.graph().grid_size))
-        #    value.setY(roundup(value.y() - self.graph().grid_size + self.graph().grid_size / 3.0, self.graph().grid_size))
-        #    value.setY(value.y() - 2)
-        #    return value
         return QGraphicsItem.itemChange(self, change, value)
 
     @staticmethod
@@ -453,7 +450,7 @@ class Node(QGraphicsItem, NodeBase):
         template['inputs'] = [i.serialize() for i in self.inputs.values()]
         template['outputs'] = [o.serialize() for o in self.outputs.values()]
         template['meta']['label'] = self.label().toPlainText()
-        template["meta"]["hidden"] = not self.isVisible()
+        #template["meta"]["hidden"] = not self.isVisible()
         return template
 
     def propertyView(self):
@@ -487,7 +484,7 @@ class Node(QGraphicsItem, NodeBase):
 
 
     def paint(self, painter, option, widget):
-        self.updateConstraints()
+        #self.updateConstraints()
         NodePainter.default(self, painter, option, widget)
 
 
@@ -500,12 +497,12 @@ class Node(QGraphicsItem, NodeBase):
         self.update()
         QGraphicsItem.mouseReleaseEvent(self, event)
 
-    def addInputPin(self, pinName, dataType, foo=None, hideLabel=False, bCreateInputWidget=True, index=-1, userStructClass=ENone, defaultValue=None,constraint=None,allowedPins=None):
-        p = self._addPin(PinDirection.Input, dataType, foo, hideLabel, bCreateInputWidget, pinName, index=index, userStructClass=userStructClass, defaultValue=defaultValue,constraint=constraint,allowedPins=allowedPins)
+    def addInputPin(self, pinName, dataType, foo=None, hideLabel=False, bCreateInputWidget=True, index=-1, userStructClass=ENone, defaultValue=None,constraint=None,allowedPins=None,editable=False):
+        p = self._addPin(PinDirection.Input, dataType, foo, hideLabel, bCreateInputWidget, pinName, index=index, userStructClass=userStructClass, defaultValue=defaultValue,constraint=constraint,allowedPins=allowedPins,editable=editable)
         return p
 
-    def addOutputPin(self, pinName, dataType, foo=None, hideLabel=False, bCreateInputWidget=True, index=-1, userStructClass=ENone, defaultValue=None,constraint=None,allowedPins=None):
-        p = self._addPin(PinDirection.Output, dataType, foo, hideLabel, bCreateInputWidget, pinName, index=index, userStructClass=userStructClass, defaultValue=defaultValue,constraint=constraint,allowedPins=allowedPins)
+    def addOutputPin(self, pinName, dataType, foo=None, hideLabel=False, bCreateInputWidget=True, index=-1, userStructClass=ENone, defaultValue=None,constraint=None,allowedPins=None,editable=False):
+        p = self._addPin(PinDirection.Output, dataType, foo, hideLabel, bCreateInputWidget, pinName, index=index, userStructClass=userStructClass, defaultValue=defaultValue,constraint=constraint,allowedPins=allowedPins,editable=editable)
         return p
 
     @staticmethod
@@ -543,16 +540,11 @@ class Node(QGraphicsItem, NodeBase):
         formLayout.addRow("Type", leType)
 
         # pos
-        le_pos = QLineEdit("{0} x {1}".format(self.pos().x(), self.pos().y()))
+        #le_pos = QLineEdit("{0} x {1}".format(self.pos().x(), self.pos().y()))
         #formLayout.addRow("Pos", le_pos)
 
         # inputs
         if len([i for i in self.inputs.values()]) != 0:
-            #sep_inputs = QLabel()
-            #sep_inputs.setStyleSheet("color: green;")
-            #sep_inputs.setText("INPUTS")
-            #formLayout.addRow("", sep_inputs)
-
             for inp in self.inputs.values():
                 dataSetter = inp.call if inp.dataType == DataTypes.Exec else inp.setData
                 if not inp.hasConnections():
@@ -566,14 +558,9 @@ class Node(QGraphicsItem, NodeBase):
                             w.hide()
         if self.asGraphSides:
             # outputs
+            
             if len([i for i in self.outputs.values()]) != 0:
-                #sep_outputs = QLabel()
-                #sep_outputs.setStyleSheet("color: yellow;")
-                #sep_outputs.setText("OUTPUTS")
-                #formLayout.addRow("", sep_outputs)
                 for out in self.outputs.values():
-                    #if out.dataType == DataTypes.Exec:
-                    #    continue
                     dataSetter = out.call if out.dataType == DataTypes.Exec else out.setData
                     w = getInputWidget(out.dataType, dataSetter, out.defaultValue(), out.getUserStruct())
                     if w:
@@ -639,7 +626,7 @@ class Node(QGraphicsItem, NodeBase):
                 else:
                     self._Constraints[pin.constraint] = [pin]
 
-    def _addPin(self, pinDirection, dataType, foo, hideLabel=False, bCreateInputWidget=True, name='', index=-1, userStructClass=ENone, defaultValue=None,constraint=None,allowedPins=None):
+    def _addPin(self, pinDirection, dataType, foo, hideLabel=False, bCreateInputWidget=True, name='', index=-1, userStructClass=ENone, defaultValue=None,constraint=None,allowedPins=None,editable=False):
         # check if pins with this name already exists and get uniq name
         name = self.getUniqPinName(name)
 
@@ -661,35 +648,42 @@ class Node(QGraphicsItem, NodeBase):
         if pinDirection == PinDirection.Input and foo is not None:
             p.call = foo
 
-        connector_name = QGraphicsProxyWidget()
-        connector_name.setObjectName('{0}PinConnector'.format(name))
-        connector_name.setContentsMargins(0, 0, 0, 0)
-
         lblName = name
         if hideLabel:
             lblName = ''
             p.bLabelHidden = True
 
-        lbl = QLabel(lblName)
-        p.nameChanged.connect(lbl.setText)
-        lbl.setContentsMargins(0, 0, 0, 0)
-        lbl.setAttribute(QtCore.Qt.WA_TranslucentBackground)
-        font = QtGui.QFont('Consolas')
-        color = Colors.PinNameColor
-        font.setPointSize(6)
-        lbl.setFont(font)
-        style = 'color: rgb({0}, {1}, {2}, {3});'.format(
-            color.red(),
-            color.green(),
-            color.blue(),
-            color.alpha())
-        lbl.setStyleSheet(style)
-        connector_name.setWidget(lbl)
+        #connector_name = QGraphicsProxyWidget()
+        connector_name = EditableLabel(name=lblName,node=self,graph=self.graph())
+        connector_name._isEditable = editable
+        p._isEditable = editable
+        connector_name.setObjectName('{0}PinConnector'.format(name))
+        connector_name.setContentsMargins(0, 0, 0, 0)
+
+        connector_name.setColor(Colors.PinNameColor)
+        p.nameChanged.connect(connector_name.setText)
+        connector_name.nameChanged.connect(p.setName)
+        #lbl = QLabel(lblName)
+        #p.nameChanged.connect(lbl.setText)
+        #lbl.setContentsMargins(0, 0, 0, 0)
+        #lbl.setAttribute(QtCore.Qt.WA_TranslucentBackground)
+        #font = QtGui.QFont('Consolas')
+        #color = Colors.PinNameColor
+        #font.setPointSize(6)
+        #lbl.setFont(font)
+        #style = 'color: rgb({0}, {1}, {2}, {3});'.format(
+        #    color.red(),
+        #    color.green(),
+        #    color.blue(),
+        #    color.alpha())
+        #lbl.setStyleSheet(style)
+        #connector_name.setWidget(lbl)
         if pinDirection == PinDirection.Input:
             container = self.addContainer(pinDirection)
             if hideLabel:
                 container.setMinimumWidth(15)
-            lbl.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
+            #lbl.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
+            connector_name.nameLabel.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
             container.layout().addItem(p)
             p._container = container
             container.layout().addItem(connector_name)
@@ -701,7 +695,8 @@ class Node(QGraphicsItem, NodeBase):
             container = self.addContainer(pinDirection)
             if hideLabel:
                 container.setMinimumWidth(15)
-            lbl.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignTop)
+            #lbl.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignTop)
+            connector_name.nameLabel.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignTop)
             container.layout().addItem(connector_name)
             container.layout().addItem(p)
             p._container = container
@@ -715,40 +710,3 @@ class Node(QGraphicsItem, NodeBase):
             setattr(self, name, p)
         return p
 
-class EditableLabel(QWidget):
-    def __init__(self, name="",parent=None):
-        super(EditableLabel, self).__init__(parent)
-
-        self.nameLabel = QtWidgets.QLabel(name)
-        
-        self.mainLayout = QtWidgets.QGridLayout()
-        self.mainLayout.addWidget(self.nameLabel, 0, 0)
-        
-        self.setLayout(self.mainLayout)
-        self.create_actions()
-        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        self.customContextMenuRequested.connect(self.setup_context_menu)
-        
-    def setText(self,text):
-        self.nameLabel.setText(text)
-    def mouseDoubleClickEvent(self, event):
-        super(EditableLabel, self).mouseDoubleClickEvent(self, event)
-        self.start_edit_name()
-        event.accept()
-
-    def create_actions(self):
-        self.startEditAct = QtWidgets.QAction('Edit', self, triggered = self.start_edit_name)
-        
-    def setup_context_menu(self, point):
-        aMenu = QtWidgets.QMenu()
-        aMenu.addAction(self.startEditAct)
-        aMenu.exec_(point) 
-        
-    def start_edit_name(self):
-        self.nameEdit = QtWidgets.QLineEdit(self.nameLabel.text())
-        self.mainLayout.addWidget(self.nameEdit, 0, 0)
-        self.nameEdit.returnPressed.connect(self.finish_edit_name)
-        
-    def finish_edit_name(self):
-        self.nameLabel.setText(self.nameEdit.text())
-        self.nameEdit.hide()

@@ -4,6 +4,7 @@ from ..Core import Node
 from Qt import QtGui
 from Qt.QtWidgets import QPushButton
 from Qt.QtWidgets import QGraphicsProxyWidget
+from Qt.QtWidgets import QFileDialog
 from Qt.QtWidgets import QMenu
 from ..Core.CodeEditor import WCodeEditor
 import weakref
@@ -13,7 +14,7 @@ from collections import OrderedDict
 import inspect
 import os
 from os import listdir, path, startfile
-    
+
 
 
 class pythonNode(Node, NodeBase):
@@ -120,7 +121,27 @@ class pythonNode(Node, NodeBase):
         return 'default description'
 
     def _implementPlugin(self,name, ports,computeCode):
-        NodeTemplate = """from ..Core.AbstractGraph import *
+        from . import _nodeClasses
+        from ..FunctionLibraries import _foos
+        from ..SubGraphs import _subgraphClasses
+        from .. import SubGraphs       
+        existing_nodes = [n for n in _nodeClasses]
+        existing_nodes += [n for n in _foos]
+        existing_nodes += [n for n in _subgraphClasses]
+        from .. import Nodes
+        #file_path = "{0}/{1}.py".format(os.path.dirname(__file__), name)
+        #existing_nodes = [n.split(".")[0] for n in os.listdir(os.path.dirname(__file__)) if n.endswith(".py") and "__init__" not in n]
+        name_filter = "Node Files (*.py)"
+        pth = QFileDialog.getSaveFileName(filter=name_filter)
+        if not pth == '':
+            file_path = pth
+            path,name = os.path.split(file_path)
+            name,ext = os.path.splitext(name)
+            if name in existing_nodes:
+                print("[ERROR] Node {0} already exists! Chose another name".format(name))
+                return
+
+            NodeTemplate = """from ..Core.AbstractGraph import *
 from ..Core.Settings import *
 from ..Core import Node
 
@@ -162,16 +183,13 @@ class {0}(Node):
         return 'default description'
     {2}    
 """.format(name,ports,computeCode)
-   
-        file_path = "{0}/{1}.py".format(os.path.dirname(__file__), name)
-        existing_nodes = [n.split(".")[0] for n in os.listdir(os.path.dirname(__file__)) if n.endswith(".py") and "__init__" not in n]
 
-        if name in existing_nodes:
-            print("[ERROR] Node {0} already exists! Chose another name".format(name))
-            return
 
-        # write to file. delete older if needed
-        with open(file_path, "wb") as f:
-            f.write(NodeTemplate)
-        print("[INFO] Node {0} been created.\nIn order to appear in node box, restart application.".format(name))
-        startfile(file_path)
+            # write to file. delete older if needed
+            with open(file_path, "wb") as f:
+                f.write(NodeTemplate)
+            print("[INFO] Node {0} been created.\nIn order to appear in node box, restart application.".format(name))
+            startfile(file_path)
+            reload(Nodes)
+            Nodes._getClasses()        
+            

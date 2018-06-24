@@ -1,10 +1,6 @@
 from ..Core.Pin import PinWidgetBase
 from ..Core.AGraphCommon import *
 
-import sys 
-sys.path.append(r"C:\Users\pedro\OneDrive\pcTools_v5\pcSequenceExplorer\modules")
-
-
 from ..FunctionLibraries import ShotGunLib
 
 class SgFilterPin(PinWidgetBase):

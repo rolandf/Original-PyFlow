@@ -17,6 +17,7 @@ import Nodes
 import Commands
 import FunctionLibraries
 import Pins
+import SubGraphs
 from Ui import GraphEditor_ui
 from time import clock
 
@@ -281,7 +282,8 @@ class PyFlow(QMainWindow, GraphEditor_ui.Ui_MainWindow):
 
         QApp = QCoreApplication.instance()    
         
-        QApp.setStyleSheet( self.styleSheetEditor.getStyleSheet() )
+        #QApp.setStyleSheet( self.styleSheetEditor.getStyleSheet() )
+        self.setStyleSheet( self.styleSheetEditor.getStyleSheet() )
 
     def editTheme(self):
         self.styleSheetEditor.show()
@@ -289,7 +291,8 @@ class PyFlow(QMainWindow, GraphEditor_ui.Ui_MainWindow):
     def updateStyle(self)   : 
         if self.styleSheetEditor:
             QApp = QCoreApplication.instance()
-            QApp.setStyleSheet( self.styleSheetEditor.getStyleSheet() )     
+            #QApp.setStyleSheet( self.styleSheetEditor.getStyleSheet() )     
+            self.setStyleSheet( self.styleSheetEditor.getStyleSheet() )
 
     def startMainLoop(self):
         self.tick_timer.start(1000 / EDITOR_TARGET_FPS)
@@ -386,8 +389,10 @@ class PyFlow(QMainWindow, GraphEditor_ui.Ui_MainWindow):
         reload(Pins)
         reload(FunctionLibraries)
         reload(Nodes)
+        reload(SubGraphs)
         Nodes._getClasses()
         FunctionLibraries._getFunctions()
+        SubGraphs._getClasses()
 
 
 

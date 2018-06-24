@@ -104,8 +104,8 @@ class commentNode(Node, NodeBase):
         self.edgesToHide = []       
         self.nodesNamesToMove = []
         self.pinsToMove = {}
-        self.commentInputs = {}
-        self.commentOutpus = {}
+        self.commentInputs = []
+        self.commentOutpus = []
         self.lastNodePos = self.scenePos()
         self.rect = self.childrenBoundingRect()
         self.initialRectWidth = 0.0
@@ -142,7 +142,7 @@ class commentNode(Node, NodeBase):
             'text': self.label().toPlainText(),
             'color': (self.color.getRgb()),
             'expanded':self.expanded,
-            'nodesToMove':[n.name for n in self.nodesToMove]
+            'nodesToMove':[str(n.uid) for n in self.nodesToMove]
         }
         return template
 
@@ -155,6 +155,8 @@ class commentNode(Node, NodeBase):
         text = self.__class__.__name__
         # initial color is black
         color = self.color
+        self.rect.setBottom(height)
+        self.rect.setRight(width)        
         try:
             # if copied in runtime
             width = jsonTemplate['meta']['commentNode']['w']
@@ -163,21 +165,23 @@ class commentNode(Node, NodeBase):
             text = jsonTemplate['meta']['commentNode']['text']
             color = QtGui.QColor(*jsonTemplate['meta']['commentNode']['color'])
 
-
+            self.rect.setBottom(height)
+            self.rect.setRight(width)
+            if "nodesToMove" in jsonTemplate['meta']['commentNode']:
+                self.nodesNamesToMove =  jsonTemplate['meta']['commentNode']["nodesToMove"]   
+                for nodename in  self.nodesNamesToMove:
+                    n = self.graph().nodes[uuid.UUID(nodename)]
+                    uuid.UUID(nodename)
+                    if n != None and n not in self.nodesToMove:
+                        self.nodesToMove[n]=n.scenePos()
+                self.nodesNamesToMove = []                      
             if "expanded" in jsonTemplate['meta']['commentNode']:
                 self.expanded = jsonTemplate['meta']['commentNode']["expanded"]
-                    
 
-            if "nodesToMove" in jsonTemplate['meta']['commentNode']:
-                self.nodesNamesToMove =  jsonTemplate['meta']['commentNode']["nodesToMove"] 
         except:
             pass            
-        self.prevRect = height
-        self.rect.setRight(width)
-        if self.expanded:
-            self.rect.setBottom(height)
-        else:
-            self.rect.setBottom(self.label().h/2)
+
+    
         self.color = color
         self.update()
         self.scene().removeItem(self.label())
@@ -193,7 +197,6 @@ class commentNode(Node, NodeBase):
     @staticmethod
     def isInRange(mid, val, width=10):
         '''check if val inside strip'''
-
         leftEdge = mid - width
         rightEdge = mid + width
         return leftEdge <= val <= rightEdge
@@ -226,47 +229,39 @@ class commentNode(Node, NodeBase):
             self.bResize = True
         if self.expanded:
             self.nodesToMove.clear()
-            self.pinsToMove.clear()
-            self.commentInputs =[]
-            self.commentOutpus = []
-            self.edgesToHide = []
-            for node in [i for i in self.collidingItems() if isinstance(i, Node) and not isinstance(i, commentNode)]:
-                self.nodesToMove[node] = node.scenePos()
-                node.groupNode = self
-                for i in node.inputs.values() :
-                    if i.hasConnections():
-                        self.pinsToMove[i] = i.scenePos()
-                        self.commentInputs.append(i)
-                for i in node.outputs.values():
-                    if i.hasConnections():
-                        self.pinsToMove[i] = i.scenePos()
-                        self.commentOutpus.append(i)
-
-            for edge in [i for i in self.collidingItems() if isinstance(i, Edge) and not isinstance(i, commentNode)]:
-                if edge.source().parent() in self.nodesToMove and edge.destination().parent() in self.nodesToMove:
-                    self.edgesToHide.append(edge)                                  
+            self.updateChildrens(self.collidingItems())                         
         else:
             nodes = []
-            self.commentInputs =[]
-            self.commentOutpus = []
-            self.edgesToHide = []
             for nodename in  self.nodesNamesToMove:
-                nodes.append(self.graph().getNodeByName(nodename))            
-            for node in [i for i in nodes if isinstance(i, Node) and not isinstance(i, commentNode)]:
-                self.nodesToMove[node] = node.scenePos()
-                node.groupNode = self
-                for i in node.inputs.values() :
-                    if i.hasConnections():
-                        self.pinsToMove[i] = i.scenePos()
-                        self.commentInputs.append(i)
-                for i in node.outputs.values():
-                    if i.hasConnections():
-                        self.pinsToMove[i] = i.scenePos()
-                        self.commentOutpus.append(i)
+                nodes.append(self.graph().nodes[nodename])            
+            self.updateChildrens(nodes)
 
-            for edge in [i for i in self.collidingItems() if isinstance(i, Edge) and not isinstance(i, commentNode)]:
-                if edge.source().parent() in self.nodesToMove and edge.destination().parent() in self.nodesToMove:
-                    self.edgesToHide.append(edge)            
+    def updateChildrens(self,nodes):
+        self.commentInputs =[]
+        self.commentOutpus = []
+        self.edgesToHide = []   
+        self.pinsToMove.clear()  
+        self.nodesNamesToMove = []
+        edges = []   
+        for node in [i for i in nodes if isinstance(i, Node) and not isinstance(i, commentNode)]:
+            self.nodesNamesToMove.append(node.uid)
+            self.nodesToMove[node] = node.scenePos()
+            node.groupNode = self
+            for i in node.inputs.values() :
+                self.pinsToMove[i] = i.scenePos()
+                self.commentInputs.append(i)
+            for i in node.outputs.values():
+                self.pinsToMove[i] = i.scenePos()
+                self.commentOutpus.append(i)
+        for node in self.nodesToMove:
+            for i in node.inputs.values()+node.outputs.values():
+                for edg in i.edge_list:
+                    if edg.source().parent() in self.nodesToMove and edg.destination().parent() in self.nodesToMove:
+                        self.edgesToHide.append(edg)     
+
+        #for edge in [i for i in self.collidingItems() if isinstance(i, Edge) and not isinstance(i, commentNode)]:
+        #    if edge.source().parent() in self.nodesToMove and edge.destination().parent() in self.nodesToMove:
+        #        self.edgesToHide.append(edge)         
 
     def mouseMoveEvent(self, event):
         QGraphicsItem.mouseMoveEvent(self, event)
@@ -315,19 +310,19 @@ class commentNode(Node, NodeBase):
             self.expanded = False
             self.prevRect = self.rect.bottom()
             self.rect.setBottom(self.label().h/2)
-            for nodename in  self.nodesNamesToMove:
-                n = self.graph().getNodeByName(nodename)
-                if n not in self.nodesToMove:
-                    self.nodesToMove[n]=n.scenePos()
+
+            
             for node in self.nodesToMove:
                 node.hide()
-
+            
             for pin in self.pinsToMove:
                 if pin in self.commentInputs:
                     pin.prevPos = QtCore.QPointF(self.scenePos().x()-8,self.scenePos().y())-pin.scenePos()
                 elif pin in self.commentOutpus:
                     pin.prevPos =QtCore.QPointF(self.scenePos().x()+self.boundingRect().width()-8,self.scenePos().y())-pin.scenePos()                    
                 pin.translate(pin.prevPos.x(),pin.prevPos.y()) 
+                pin.update()
+            
             for edge in self.edgesToHide:
                 edge.hide()
         else:

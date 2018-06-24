@@ -8,6 +8,7 @@ class AnyPin(PinWidgetBase):
         self.setDefaultValue(None)
         self.supportedDataTypesList = tuple([x for x in DataTypes])
         self.origDataType = DataTypes.Any
+        self._free = True
     def supportedDataTypes(self):
         return self.supportedDataTypesList
 
@@ -34,54 +35,45 @@ class AnyPin(PinWidgetBase):
         self.OnPinConnected.emit(other)
 
     def pinDisconnected(self, other):
-        self.updateOnDisconnection()
         PinWidgetBase.pinDisconnected(self, other)
-        self.OnPinConnected.emit(other)         
+        self.OnPinConnected.emit(other)   
+        self.updateOnDisconnection()      
         
-
     def updateOnConnection(self,other):
         if self.constraint == None:
             self.setType(other)
+            self._free = False 
         else:
-            free = True
-            for port in self.parent()._Constraints[self.constraint]:
-                if port.hasConnections() and port.dataType != DataTypes.Any:
-                    free = False
-                    break
-            checked = []
-            free = self.checkFree(checked)
-            if free:
-                self.setType(other)               
-            for port in self.parent()._Constraints[self.constraint]:
-                if port.dataType == DataTypes.Any:
-                    self.setSelfType(port)
-                    for e in port.edge_list:
-                        for p in [e.source(),e.destination()]:
-                            if p.dataType == DataTypes.Any and p.dataType != self.dataType:
-                                self.setSelfType(p) 
-                                p.updateOnConnection(self)       
+            if other.dataType != DataTypes.Any:
+                self._free = False
+                self.setType(other)
+                for port in self.parent()._Constraints[self.constraint]:
+                    if port != self:
+                        port.setType(other)
+                        port._free = False
+                        for e in port.edge_list:
+                            for p in [e.source(),e.destination()]:
+                                if p != port:
+                                    if p.dataType == DataTypes.Any and p.dataType != self.dataType:
+                                        p.updateOnConnection(port)       
+
     def updateOnDisconnection(self):
         if self.constraint == None:
             self.setDefault()
-        else:
-            checked = []
-            free = self.checkFree(checked)
-            if free:
+            self._free = True 
+        elif not self._free:
+            self._free = self.checkFree([])
+            if self._free:
                 self.setDefault()
                 for port in self.parent()._Constraints[self.constraint]:
-                    if port != self and port.dataType != DataTypes.Any:                        
-                        self.setSelfType(port)  
-                        if isinstance(port,AnyPin):
-                            port.updateOnDisconnection()  
+                    if port != self:
+                        port.setDefault()
+                        port._free = True
                         for e in port.edge_list:
                             for p in [e.source(),e.destination()]:
-                                if p.dataType != DataTypes.Any:
-                                    self.setSelfType(p)
-                                    try:
-                                        p.updateOnDisconnection() 
-                                    except:
-                                        continue
-            
+                                if p != port:
+                                    p.updateOnDisconnection()    
+                            
 
     def checkFree(self,checked=[],selfChek=True):
         if self.constraint == None or self.dataType == DataTypes.Any:
@@ -90,26 +82,25 @@ class AnyPin(PinWidgetBase):
             con  = []
             if selfChek:
                 free = not self.hasConnections()
-                
                 if not free:
                     for edge in self.edge_list:
                         for c in [edge.source(),edge.destination()]:
-                            if c not in checked:
-                                con.append(c)
+                            if c != self:
+                                if c not in checked:
+                                    con.append(c)
             else:
                 free = True
                 checked.append(self)
-
+            free = True    
             for port in self.parent()._Constraints[self.constraint]+con:
                 if port not in checked:
                     checked.append(port)
                     if not isinstance(port,AnyPin):
-                        return False
-                    else:
+                        free = False
+                    elif free:
                         free = port.checkFree(checked)
                         
-            return free
-
+            return free           
 
     def call(self):
         super(AnyPin, self).call()
@@ -120,25 +111,24 @@ class AnyPin(PinWidgetBase):
         for e in self.edge_list:
             e.highlight()
             
-    def setSelfType(self,port):
-        port.dataType = self.dataType 
-        port.color = self.color
-        port.setDefaultValue(self.defaultValue())
-        port.setData(self.defaultValue()) 
-        for e in port.edge_list:
-            e.setColor( self.color())        
-        port.update()         
+       
     def setDefault(self):
         self.dataType = DataTypes.Any
         self.color = self.defcolor
         self.setDefaultValue(None)
-        self.setData(None)
+        for e in self.edge_list:
+            e.setColor( self.color())
+        self.OnPinChanged.emit(self)   
         self.update()
     def setType(self,other):
         self.dataType = other.dataType
         self.color = other.color
-        self.setData(other.defaultValue())
+        if str(type(self._data)) == "<type 'unicode'>":
+            self._data = str(self._data)
+        if type(self._data) != type(other._data):
+            self.setData(other.defaultValue())
         self.setDefaultValue(other.defaultValue()) 
         for e in self.edge_list:
-            e.setColor( self.color())          
+            e.setColor( self.color())
+        self.OnPinChanged.emit(self)         
         self.update()     

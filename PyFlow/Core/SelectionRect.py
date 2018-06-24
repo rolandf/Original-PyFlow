@@ -8,7 +8,7 @@ from Qt import QtGui, QtWidgets, QtCore
 
 class SelectionRect(QtWidgets.QGraphicsWidget):
     __backgroundColor = QtGui.QColor(100, 100, 100, 50)
-    __pen =  QtGui.QPen(QtGui.QColor(25, 25, 25), 1.0,  QtCore.Qt.DashLine)
+    __pen =  QtGui.QPen(QtGui.QColor(255, 255, 255), 1.0,  QtCore.Qt.DashLine)
 
     def __init__(self, graph, mouseDownPos):
         super(SelectionRect, self).__init__()
