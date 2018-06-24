@@ -7,7 +7,6 @@ from collections import OrderedDict
 import itertools
 from copy import deepcopy
 
-
 class ISerializable(object):
     """
     Interface for serialization and deserialization.
@@ -233,23 +232,26 @@ class PinBase(IPin):
         self.affected_by = []
         ## List of connections
         self.edge_list = []
-
+        self.deletable = False
         ## Access to the node
-        self.parent = weakref.ref(parent)
+        if parent != None:
+            self.parent = weakref.ref(parent)
         self.setName(name)
         self.dataType = dataType
-
+        self.origDataType = dataType
         ## Defines is this input pin or output
         self.direction = direction
 
     # ISerializable interface
     def serialize(self):
         data = {'name': self.name,
-                'dataType': int(self.dataType),
+                'dataType': int(self.origDataType),
+                'curr_dataType': int(self.dataType),
                 'direction': int(self.direction),
                 'value': self.currentData(),
                 'uuid': str(self.uid),
-                'bDirty': self.dirty
+                'bDirty': self.dirty,
+                'deletable':self.deletable
                 }
         return data
 
@@ -476,7 +478,7 @@ class NodeBase(INode):
         while tmp in pinNames:
             idx += 1
             tmp = name + str(idx)
-        return name + str(idx)
+        return name +"_"+ str(idx)
 
     def getPinByUUID(self, uid):
         if uid in self.inputs:
@@ -650,13 +652,15 @@ class Graph(object):
         #     if src.getUserStruct() != dst.getUserStruct():
         #         print('{0} and {1} structures are not supported'.format(src.getUserStruct().__name__, dst.getUserStruct().__name__))
         #         return False
+        if src.dataType == DataTypes.Any and not  cycle_check(src, dst) and not src.direction == dst.direction:
+            return True
 
-        if src.dataType not in dst.supportedDataTypes():
+        if src.dataType not in dst.supportedDataTypes() and not src.dataType == DataTypes.Any:
             print("[{0}] is not conmpatible with [{1}]".format(getDataTypeName(src.dataType), getDataTypeName(dst.dataType)))
             return False
         else:
             if src.dataType is DataTypes.Exec:
-                if dst.dataType is not DataTypes.Exec:
+                if dst.dataType is not DataTypes.Exec and dst.dataType is not DataTypes.Any:
                     print("[{0}] is not conmpatible with [{1}]".format(getDataTypeName(src.dataType), getDataTypeName(dst.dataType)))
                     return False
 
@@ -676,6 +680,20 @@ class Graph(object):
             if debug:
                 print('cycles are not allowed')
             return False
+
+        if dst.constraint != None:
+            if dst.dataType != DataTypes.Any:               
+                from ..Pins import CreatePin
+                from ..Pins.AnyPin import AnyPin 
+                cheked = []
+                if isinstance(dst,AnyPin):
+                    free = dst.checkFree([],False)
+                    if not free:
+                        a = CreatePin("", None, dst.dataType, 0)
+                        if src.dataType not in a.supportedDataTypes():
+                            print("[{0}] is not conmpatible with [{1}]".format(getDataTypeName(src.dataType), getDataTypeName(dst.dataType)))
+                            return False
+                        del a                     
         return True
 
     def addEdge(self, src, dst):

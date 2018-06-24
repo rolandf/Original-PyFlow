@@ -3,8 +3,8 @@
 from __future__ import absolute_import
 import os
 _PINS = {}
-
-
+from ..Core.AGraphCommon import DataTypes
+_suportedTypes = {}
 def _REGISTER_PIN_TYPE(pinSubclass):
     '''
     registering pin
@@ -15,22 +15,20 @@ def _REGISTER_PIN_TYPE(pinSubclass):
     else:
         raise Exception("Error registering pin type {0}\n pin with ID [{1}] already registered".format(pinSubclass.__name__))
 
+def findPinClassByType(dataType):
+        return _PINS[dataType] if dataType in _PINS else None
 
 # append from Pins
 for n in os.listdir(os.path.dirname(__file__)):
     if n.endswith(".py") and "__init__" not in n:
         pinName = n.split(".")[0]
-        try:
-            exec("from .{0} import {0}".format(pinName))
-            exec("pin_class = {0}".format(pinName))
-            _REGISTER_PIN_TYPE(pin_class)
-        except Exception as e:
-            print(e, pinName)
-            pass
+        #try:
+        exec("from .{0} import {0}".format(pinName))
+        exec("pin_class = {0}".format(pinName))
+        _REGISTER_PIN_TYPE(pin_class)
 
 
-def findPinClassByType(dataType):
-        return _PINS[dataType] if dataType in _PINS else None
+
 
 
 def getPinDefaultValueByType(dataType):

@@ -35,3 +35,18 @@ class Ui_Form(object):
         Form.setWindowTitle(QtCompat.translate("Form", "Form", None, -1))
         self.pushButton.setText(QtCompat.translate("Form", "+", None, -1))
 
+if __name__ == '__main__':
+    from Qt.QtWidgets import QApplication,QStyleFactory
+    import sys
+
+
+
+    app = QApplication(sys.argv)
+
+    app.setStyle(QStyleFactory.create("plastique"))
+    wm = QtWidgets.QDialog()
+    w = Ui_Form()
+    w.setupUi(wm)
+    wm.show()
+
+    sys.exit(app.exec_())

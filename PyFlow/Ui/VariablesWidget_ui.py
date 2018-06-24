@@ -62,4 +62,5 @@ class Ui_Form(object):
         self.pbNewVar.setText(QtCompat.translate("Form", "+", None, -1))
         self.label_2.setText(QtCompat.translate("Form", "Kill selected var", None, -1))
 
-import nodes_res_rc
+from .. import nodes_res_rc
+

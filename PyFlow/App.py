@@ -2,14 +2,12 @@ from os import listdir, path, startfile
 import sys
 from Qt import QtGui
 from Qt import QtCore
+from Qt import QtWidgets
 from Qt.QtWidgets import QMainWindow
 from Qt.QtWidgets import QApplication
-from Qt.QtWidgets import QStyleFactory
-from Qt.QtWidgets import QTextEdit
+from Qt.QtCore import QCoreApplication
 from Qt.QtWidgets import QMessageBox
-from Qt.QtWidgets import QAction
 from Qt.QtWidgets import QInputDialog
-from Qt.QtWidgets import QHBoxLayout
 from Qt.QtWidgets import QUndoView
 from Core.Widget import GraphWidget
 from Core.Widget import Direction
@@ -19,10 +17,12 @@ import Nodes
 import Commands
 import FunctionLibraries
 import Pins
-import GraphEditor_ui
-import json
+import SubGraphs
+from Ui import GraphEditor_ui
 from time import clock
 
+from stylesheet import editableStyleSheet
+from Ui.StyleSheetEditor import StyleSheetEditor
 
 FILE_DIR = path.dirname(__file__)
 SETTINGS_PATH = FILE_DIR + "/appConfig.ini"
@@ -38,8 +38,8 @@ class PluginType:
 
 
 def _implementPlugin(name, pluginType):
-    CommandTemplate = """from Qt.QtWidgets import QUndoCommand
-
+    CommandTemplate = """
+from Qt.QtWidgets import QUndoCommand
 
 class {0}(QUndoCommand):
 
@@ -57,6 +57,8 @@ class {0}(QUndoCommand):
 from ..Core.Settings import *
 from ..Core import Node
 
+## Register Datatypes Here
+#registerDatatype("YourName")
 
 class {0}(Node):
     def __init__(self, name, graph):
@@ -116,6 +118,8 @@ from ..Core.AGraphCommon import *
 # import stuff you need
 # ...
 
+## Register Datatypes Here
+#registerDatatype("YourName")
 
 class {0}(FunctionLibraryBase):
     '''doc string for {0}'''
@@ -145,6 +149,8 @@ class {0}(FunctionLibraryBase):
     PinTemplate = """from ..Core.Pin import PinWidgetBase
 from ..Core.AGraphCommon import *
 
+## Register Datatypes Here
+#registerDatatype("YourName")
 
 class {0}(PinWidgetBase):
     '''doc string for {0}'''
@@ -221,7 +227,6 @@ class {0}(PinWidgetBase):
         print("[INFO] Pin {0} been created.\n Restart application.".format(name))
         startfile(filePath)
 
-
 ## App itself
 class PyFlow(QMainWindow, GraphEditor_ui.Ui_MainWindow):
     def __init__(self, parent=None):
@@ -231,8 +236,13 @@ class PyFlow(QMainWindow, GraphEditor_ui.Ui_MainWindow):
         self.listViewUndoStack.setObjectName("listViewUndoStack")
         self.gridLayout_6.addWidget(self.listViewUndoStack, 0, 0, 1, 1)
 
+
+
         self.G = GraphWidget('root', self)
+        self.nodeBox2 = NodesBox(None,self.G)
         self.SceneLayout.addWidget(self.G)
+        
+        self.gridLayout_7.addWidget(self.nodeBox2)
 
         self.actionVariables.triggered.connect(self.toggleVariables)
         self.actionPlot_graph.triggered.connect(self.G.plot)
@@ -253,6 +263,7 @@ class PyFlow(QMainWindow, GraphEditor_ui.Ui_MainWindow):
         self.actionNew_pin.triggered.connect(lambda: self.newPlugin(PluginType.pPin))
         self.actionHistory.triggered.connect(self.toggleHistory)
         self.actionNew.triggered.connect(self.G.new_file)
+        self.actionEdit_Theme.triggered.connect(self.editTheme)
         self.dockWidgetUndoStack.setVisible(False)
 
         self.setMouseTracking(True)
@@ -264,6 +275,24 @@ class PyFlow(QMainWindow, GraphEditor_ui.Ui_MainWindow):
         self.fps = EDITOR_TARGET_FPS
         self.tick_timer = QtCore.QTimer()
         self.tick_timer.timeout.connect(self.mainLoop)
+
+
+        self.styleSheetEditor = StyleSheetEditor()
+        self.styleSheetEditor.Updated.connect(self.updateStyle)
+
+        QApp = QCoreApplication.instance()    
+        
+        #QApp.setStyleSheet( self.styleSheetEditor.getStyleSheet() )
+        self.setStyleSheet( self.styleSheetEditor.getStyleSheet() )
+
+    def editTheme(self):
+        self.styleSheetEditor.show()
+
+    def updateStyle(self)   : 
+        if self.styleSheetEditor:
+            QApp = QCoreApplication.instance()
+            #QApp.setStyleSheet( self.styleSheetEditor.getStyleSheet() )     
+            self.setStyleSheet( self.styleSheetEditor.getStyleSheet() )
 
     def startMainLoop(self):
         self.tick_timer.start(1000 / EDITOR_TARGET_FPS)
@@ -300,8 +329,9 @@ class PyFlow(QMainWindow, GraphEditor_ui.Ui_MainWindow):
         QMainWindow.closeEvent(self, event)
 
     def applySettings(self, settings):
-        self.restoreGeometry(settings.value('Editor/geometry'))
-        self.restoreState(settings.value('Editor/windowState'))
+        pass
+        #self.restoreGeometry(settings.value('Editor/geometry'))
+        #self.restoreState(settings.value('Editor/windowState'))
 
     def togglePropertyView(self):
         if self.dockWidgetNodeView.isVisible():
@@ -316,15 +346,26 @@ class PyFlow(QMainWindow, GraphEditor_ui.Ui_MainWindow):
             self.dockWidgetVariables.show()
 
     def shortcuts_info(self):
-
-        data = "Ctrl+Shift+N - togle node box\n"
-        data += "Ctrl+N - new file\n"
+        data = "Ctrl+N - new file\n"
         data += "Ctrl+S - save\n"
         data += "Ctrl+Shift+S - save as\n"
         data += "Ctrl+O - open file\n"
-        data += "Ctrl+F - frame\n"
-        data += "C - comment selected nodes\n"
+
+        data += "Ctrl+D - duplicate\n"
+        data += "Alt+Drag - duplicate\n"
         data += "Delete - kill selected nodes\n"
+
+        data += "Ctrl+C - copy\n"
+        data += "Ctrl+V - paste\n"
+
+        data += "Ctrl+Z - undo\n"
+        data += "Ctrl+Y - redo\n"
+
+        data +=  "Tab - togle node box\n"
+        data += "F - frame Selected\n"
+        data += "G - frame All\n"
+        data += "C - comment selected nodes\n"
+
         data += "Ctrl+Shift+ArrowLeft - Align left\n"
         data += "Ctrl+Shift+ArrowUp - Align Up\n"
         data += "Ctrl+Shift+ArrowRight - Align right\n"
@@ -348,8 +389,11 @@ class PyFlow(QMainWindow, GraphEditor_ui.Ui_MainWindow):
         reload(Pins)
         reload(FunctionLibraries)
         reload(Nodes)
+        reload(SubGraphs)
         Nodes._getClasses()
         FunctionLibraries._getFunctions()
+        SubGraphs._getClasses()
+
 
 
 if __name__ == '__main__':

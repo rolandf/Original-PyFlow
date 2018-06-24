@@ -16,12 +16,6 @@ class Matrix44(FunctionLibraryBase):
         return pyrr.Matrix44()
 
     @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.String, str(pyrr.Matrix44())), meta={'Category': 'Math|Matrix44', 'Keywords': []})
-    def m44ToStr(m=(DataTypes.Matrix44, pyrr.Matrix44())):
-        '''M44 to string.'''
-        return str(m)
-
-    @staticmethod
     @IMPLEMENT_NODE(returns=(DataTypes.Matrix44, pyrr.Matrix44.identity()), nodeType=NodeTypes.Pure, meta={'Category': 'Math|Matrix44', 'Keywords': []})
     def m44Ident():
         '''Identity matrix44.'''

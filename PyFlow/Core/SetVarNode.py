@@ -22,8 +22,8 @@ class SetVarNode(Node, NodeBase):
         self.var = var
         self.inExec = self.addInputPin('in0', DataTypes.Exec, self.compute, hideLabel=True)
         self.outExec = self.addOutputPin('out0', DataTypes.Exec, hideLabel=True)
-        self.value = self.addInputPin('inp', self.var.dataType)
-        self.outValue = self.addOutputPin('out', self.var.dataType)
+        self.value = self.addInputPin('inp', self.var.dataType,constraint="1")
+        self.outValue = self.addOutputPin('out', self.var.dataType,constraint="1")
         self.var.nameChanged.connect(self.onVarNameChanged)
         self.var.killed.connect(self.kill)
         self.var.dataTypeChanged.connect(self.onVarDataTypeChanged)

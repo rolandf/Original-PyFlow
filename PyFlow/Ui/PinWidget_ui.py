@@ -61,4 +61,20 @@ class Ui_Form(object):
         self.cbHideLabel.setToolTip(QtCompat.translate("Form", "should hide label", None, -1))
         self.cbHideLabel.setText(QtCompat.translate("Form", "hide label", None, -1))
 
-import nodes_res_rc
+from .. import nodes_res_rc
+
+if __name__ == '__main__':
+    from Qt.QtWidgets import QApplication,QStyleFactory
+    import sys
+
+
+
+    app = QApplication(sys.argv)
+
+    app.setStyle(QStyleFactory.create("plastique"))
+    wm = QtWidgets.QDialog()
+    w = Ui_Form()
+    w.setupUi(wm)
+    wm.show()
+
+    sys.exit(app.exec_())

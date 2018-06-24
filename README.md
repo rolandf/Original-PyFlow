@@ -3,7 +3,11 @@
   <img src="PyFlow/resources/PyFlow.jpg">
 </p>
 
+**Original Repository** https://github.com/IlgarLunin/PyFlow
+
 **PyFlow** is a general purpose runtime extendable python qt node editor.
+
+Watch [video](https://youtu.be/chnRrr1Qfj8)
 
 # Table of contents
 - [Features](#features)
@@ -19,12 +23,17 @@
 - Undo stack
 - Properties view
 - Dirty propagation for optimal graph computation
-- Runtime nodes creation
+- Runtime nodes creation and export
 - Variables
+- Runtime Subgraph creation and export
+- Collapsible Comment Nodes
+- Dynamic constraining Port Type
+- Copy/Paste + Alt+Drag->Clone
+
 
 # Installation
 1. Download repository.
-2. Install [conda](https://conda.io/miniconda.html) with pyside2 environment. [Instruction](https://fredrikaverpil.github.io/2017/08/28/pyside2-easy-install/) here
+2. Install [conda](https://conda.io/miniconda.html) with pyside2 and python 2.7 environment. [Instruction](https://fredrikaverpil.github.io/2017/08/28/pyside2-easy-install/) here
 3. Go to **Scripts/** folder and install dependencies
 	```bash
 	pip install Qt.py pyrr enum34
@@ -38,16 +47,13 @@
 - [pyrr](https://github.com/adamlwgriffiths/Pyrr) for builtin math. (optional)
 
 # Usage
-App's entry point is a **PyFlow.py** file. There are also several handy bat scripts for debugging and profiling.
+App's entry point is **App.py** file under PyFlow folder. There are also several handy bat scripts for debugging and profiling.
 Right click on empty space to show node box then drag and drop on to canvas. Or press enter with node name selected.
 Connect and execute pins from property view or using timer node.
 
 # Extending
 See source code. **FunctionLibraries** folder for annotated nodes, **Nodes** folder for
 class based nodes. **Pins**, for data types and **Commands** for editor commands.
-
-# Donate
-[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/ILunin)
 
 # Licensing
 The MIT License (MIT)

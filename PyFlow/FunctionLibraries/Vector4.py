@@ -15,11 +15,6 @@ class Vector4(FunctionLibraryBase):
         return pyrr.Vector4()
 
     @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.String, str(pyrr.Vector4())), meta={'Category': 'Math|Vector4', 'Keywords': ['vector4']})
-    def v4ToStr(v=(DataTypes.FloatVector4, pyrr.Vector4())):
-        return str(v)
-
-    @staticmethod
     @IMPLEMENT_NODE(returns=(DataTypes.FloatVector4, pyrr.Vector4()), meta={'Category': 'Math|Vector4', 'Keywords': ['vector4']})
     def v4FromUnitLenX():
         '''Unit length x vector4.'''
@@ -73,23 +68,7 @@ class Vector4(FunctionLibraryBase):
         '''Returns w component of the vector4.'''
         return v.w
 
-    @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.FloatVector4, pyrr.Vector4()), meta={'Category': 'Math|Vector4', 'Keywords': ['vector4', '+']})
-    def v4Add(a=(DataTypes.FloatVector4, pyrr.Vector4()), b=(DataTypes.FloatVector4, pyrr.Vector4())):
-        '''Adds vector4 a and b.'''
-        return a + b
 
-    @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.FloatVector4, pyrr.Vector4()), meta={'Category': 'Math|Vector4', 'Keywords': ['vector4', '-']})
-    def v4Substract(a=(DataTypes.FloatVector4, pyrr.Vector4()), b=(DataTypes.FloatVector4, pyrr.Vector4())):
-        '''Substracts vector a and b.'''
-        return a - b
-
-    @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.Float, 0.0), meta={'Category': 'Math|Vector4', 'Keywords': ['vector4', '|']})
-    def v4Dot(a=(DataTypes.FloatVector4, pyrr.Vector4()), b=(DataTypes.FloatVector4, pyrr.Vector4())):
-        '''Dot product of two vectors.'''
-        return a | b
 
     @staticmethod
     @IMPLEMENT_NODE(returns=(DataTypes.FloatVector4, pyrr.Vector4()), meta={'Category': 'Math|Vector4', 'Keywords': ['vector4']})
@@ -97,11 +76,6 @@ class Vector4(FunctionLibraryBase):
         '''Vector4 lerp.'''
         return pyrr.Vector4(pyrr.vector.interpolate(a, b, clamp(alpha, 0.0, 1.0)))
 
-    @staticmethod
-    @IMPLEMENT_NODE(returns=(DataTypes.Bool, True), meta={'Category': 'Math|Vector4', 'Keywords': ['vector4', '==']})
-    def v4Equals(a=(DataTypes.FloatVector4, pyrr.Vector4()), b=(DataTypes.FloatVector4, pyrr.Vector4())):
-        '''Check if vectors are equals.'''
-        return a == b
 
     @staticmethod
     @IMPLEMENT_NODE(returns=(DataTypes.Float, 0.0), meta={'Category': 'Math|Vector4', 'Keywords': ['vector4']})

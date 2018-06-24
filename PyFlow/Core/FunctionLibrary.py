@@ -8,7 +8,7 @@ Using this information it becomes possible to create pins according to arguments
 """
 from inspect import getargspec
 from AGraphCommon import *
-
+from Settings import Colors
 empty = {}
 
 
@@ -18,11 +18,11 @@ empty = {}
 # @param[in] meta dictionary with category path, keywords and any additional info
 # @param[in] nodeType determines wheter it is a Pure node or Callable. If Callable - input and output execution pins will be created
 # @sa [NodeTypes](@ref PyFlow.Core.AGraphCommon.NodeTypes) FunctionLibraries
-def IMPLEMENT_NODE(func=None, returns=empty, meta={'Category': 'Default', 'Keywords': []}, nodeType=NodeTypes.Pure):
+def IMPLEMENT_NODE(func=None, returns=empty, meta={'Category': 'Default', 'Keywords': []}, nodeType=NodeTypes.Pure,color=Colors.NodeBackgrounds):
     def wrapper(func):
         func.__annotations__ = getattr(func, '__annotations__', {})
         func.__annotations__['nodeType'] = nodeType
-
+        func.__annotations__['color'] = color
         if not meta == empty:
             func.__annotations__['meta'] = meta
 
@@ -40,7 +40,11 @@ def IMPLEMENT_NODE(func=None, returns=empty, meta={'Category': 'Default', 'Keywo
                 if defaults[i][0] == DataTypes.Reference:
                     func.__annotations__[name] = defaults[i][1]
                 else:
-                    func.__annotations__[name] = defaults[i][0]
+                    #print defaults[i][0]
+                    if defaults[i][0] == DataTypes.Any:
+                        func.__annotations__[name] = [defaults[i]]
+                    else:
+                        func.__annotations__[name] = defaults[i][0]
 
             # defaults = tuple((d[1] for d in func.__defaults__ if len(d) > 1))
             customDefaults = []

@@ -1,0 +1,236 @@
+{
+  "root": {
+    "nodes": [
+      {
+        "inputs": [], 
+        "meta": {
+          "var": {}, 
+          "label": ""
+        }, 
+        "name": "__scene_outputs__", 
+        "outputs": [], 
+        "y": -350.0, 
+        "x": 470.0, 
+        "computeCode": "def compute(self):\n    '''\n    node calculations here\n    '''\n    # getting data from inputs\n    # do stuff\n    # write data to outputs\n    return\n", 
+        "type": "scene_outputs", 
+        "uuid": "eee8c165-e2ab-42a5-8198-ba541e5f8d18"
+      }, 
+      {
+        "inputs": [], 
+        "meta": {
+          "var": {}, 
+          "label": ""
+        }, 
+        "name": "__scene_inputs__", 
+        "outputs": [], 
+        "y": -350.0, 
+        "x": -515.0, 
+        "computeCode": "def compute(self):\n    '''\n    node calculations here\n    '''\n    # getting data from inputs\n    # do stuff\n    # write data to outputs\n    return\n", 
+        "type": "scene_inputs", 
+        "uuid": "64de3f03-4f86-49b2-ab92-4f7b62f0c401"
+      }, 
+      {
+        "inputs": [
+          {
+            "direction": 0, 
+            "bDirty": false, 
+            "name": "input_0", 
+            "deletable": false, 
+            "dataType": 0, 
+            "editable": false, 
+            "curr_dataType": 0, 
+            "bLabelHidden": false, 
+            "value": "None", 
+            "uuid": "a2bbcec0-1891-4376-bf4d-77c777599f05"
+          }, 
+          {
+            "direction": 0, 
+            "bDirty": false, 
+            "name": "input_0_1", 
+            "deletable": false, 
+            "dataType": 0, 
+            "editable": false, 
+            "curr_dataType": 0, 
+            "bLabelHidden": false, 
+            "value": "None", 
+            "uuid": "b010786e-76e5-48d7-820c-9321e59e07b0"
+          }
+        ], 
+        "meta": {
+          "var": {}, 
+          "label": "subgraphNode"
+        }, 
+        "name": "subgraphNode", 
+        "outputs": [
+          {
+            "direction": 1, 
+            "bDirty": true, 
+            "name": "output_1", 
+            "deletable": false, 
+            "dataType": 0, 
+            "editable": false, 
+            "curr_dataType": 0, 
+            "bLabelHidden": false, 
+            "value": null, 
+            "uuid": "f106fb9e-d057-4b4b-b1ff-13734ab848d7"
+          }
+        ], 
+        "y": -42.0, 
+        "x": -208.0, 
+        "computeCode": "def compute(self):\n    for key, value in self.dinInputs.iteritems():\n        key.setData(value.getData())\n    for key, value in self.dinOutputs.iteritems():\n        value.setData(key.getData())\n", 
+        "type": "subgraphNode", 
+        "graphData": {
+          "graph": {
+            "nodes": [
+              {
+                "inputs": [
+                  {
+                    "direction": 0, 
+                    "bDirty": true, 
+                    "name": "output_1", 
+                    "deletable": true, 
+                    "dataType": 0, 
+                    "editable": true, 
+                    "curr_dataType": 0, 
+                    "bLabelHidden": false, 
+                    "value": 0, 
+                    "uuid": "5c574eb5-47fd-459e-8206-38a2b2e574ea"
+                  }
+                ], 
+                "meta": {
+                  "var": {}, 
+                  "label": ""
+                }, 
+                "name": "__scene_outputs__", 
+                "outputs": [], 
+                "y": 16.0, 
+                "x": 33.0, 
+                "computeCode": "def compute(self):\n    '''\n    node calculations here\n    '''\n    # getting data from inputs\n    # do stuff\n    # write data to outputs\n    return\n", 
+                "type": "scene_outputs", 
+                "uuid": "0731a091-7ca6-43c1-99a3-3f381c4bf70e"
+              }, 
+              {
+                "inputs": [], 
+                "meta": {
+                  "var": {}, 
+                  "label": ""
+                }, 
+                "name": "__scene_inputs__", 
+                "outputs": [
+                  {
+                    "direction": 1, 
+                    "bDirty": true, 
+                    "name": "input_0", 
+                    "deletable": true, 
+                    "dataType": 0, 
+                    "editable": true, 
+                    "curr_dataType": 0, 
+                    "bLabelHidden": false, 
+                    "value": null, 
+                    "uuid": "02a9da12-91d8-4101-9cdc-588491c10aeb"
+                  }, 
+                  {
+                    "direction": 1, 
+                    "bDirty": true, 
+                    "name": "input_0_1", 
+                    "deletable": true, 
+                    "dataType": 0, 
+                    "editable": true, 
+                    "curr_dataType": 0, 
+                    "bLabelHidden": false, 
+                    "value": null, 
+                    "uuid": "4c662245-59e0-49da-861e-549e0ce6b011"
+                  }
+                ], 
+                "y": 16.0, 
+                "x": -84.0, 
+                "computeCode": "def compute(self):\n    '''\n    node calculations here\n    '''\n    # getting data from inputs\n    # do stuff\n    # write data to outputs\n    return\n", 
+                "type": "scene_inputs", 
+                "uuid": "5f7081a8-687d-481f-94a9-81b190b03fe9"
+              }, 
+              {
+                "inputs": [
+                  {
+                    "direction": 0, 
+                    "bDirty": true, 
+                    "name": "a", 
+                    "deletable": false, 
+                    "dataType": 0, 
+                    "editable": false, 
+                    "curr_dataType": 0, 
+                    "bLabelHidden": false, 
+                    "value": 0, 
+                    "uuid": "a042b8da-f4c3-4c29-9834-7b22d7cdec8b"
+                  }, 
+                  {
+                    "direction": 0, 
+                    "bDirty": true, 
+                    "name": "b", 
+                    "deletable": false, 
+                    "dataType": 0, 
+                    "editable": false, 
+                    "curr_dataType": 0, 
+                    "bLabelHidden": false, 
+                    "value": 0, 
+                    "uuid": "b87c3e88-810e-4d84-9035-4e8f82cbad73"
+                  }
+                ], 
+                "meta": {
+                  "var": {}, 
+                  "label": "add"
+                }, 
+                "name": "add", 
+                "outputs": [
+                  {
+                    "direction": 1, 
+                    "bDirty": true, 
+                    "name": "out", 
+                    "deletable": false, 
+                    "dataType": 0, 
+                    "editable": false, 
+                    "curr_dataType": 0, 
+                    "bLabelHidden": false, 
+                    "value": 0, 
+                    "uuid": "894b8ccb-b389-46d9-ac3a-e08a0b965910"
+                  }
+                ], 
+                "y": -66.0, 
+                "x": -22.0, 
+                "computeCode": "def compute(self):\n    # arguments will be taken from inputs\n    kwargs = {}\n    for i in self.inputs.values():\n        if i.dataType is not DataTypes.Exec:\n            kwargs[i.name] = i.getData()\n    for ref in refs:\n        if ref.dataType is not DataTypes.Exec:\n            kwargs[ref.name] = ref.setData\n    result = foo(**kwargs)\n    if returnType is not None:\n        self.setData('out', result)\n    if nodeType == NodeTypes.Callable:\n        outExec.call()\n", 
+                "type": "add", 
+                "uuid": "1c266bb7-4483-4c08-aa20-b1c81c5fee99"
+              }
+            ], 
+            "edges": [
+              {
+                "sourceName": "__scene_inputs__.input_0_1", 
+                "sourceUUID": "4c662245-59e0-49da-861e-549e0ce6b011", 
+                "destinationName": "add.b", 
+                "destinationUUID": "b87c3e88-810e-4d84-9035-4e8f82cbad73", 
+                "uuid": "f40d0c7e-dd95-4f37-a216-e85d2b363c2c"
+              }, 
+              {
+                "sourceName": "add.out", 
+                "sourceUUID": "894b8ccb-b389-46d9-ac3a-e08a0b965910", 
+                "destinationName": "__scene_outputs__.output_1", 
+                "destinationUUID": "5c574eb5-47fd-459e-8206-38a2b2e574ea", 
+                "uuid": "b3be8244-53f4-41c4-8a29-b995b4456a78"
+              }, 
+              {
+                "sourceName": "__scene_inputs__.input_0", 
+                "sourceUUID": "02a9da12-91d8-4101-9cdc-588491c10aeb", 
+                "destinationName": "add.a", 
+                "destinationUUID": "a042b8da-f4c3-4c29-9834-7b22d7cdec8b", 
+                "uuid": "f131dde9-dfaa-44f8-a57a-33c0672eb78c"
+              }
+            ], 
+            "variables": []
+          }
+        }, 
+        "uuid": "3d2ee542-83b3-4fae-a0da-2c425591c7c7"
+      }
+    ], 
+    "edges": [], 
+    "variables": []
+  }
+}

@@ -13,7 +13,9 @@ from functools import wraps
 from Queue import Queue
 import uuid
 import sys
-from enum import IntEnum
+#from enum import IntEnum
+
+from aenum import extend_enum,IntEnum
 import Enums
 
 
@@ -135,26 +137,37 @@ class REGISTER_ENUM(object):
 
 ## Data types identifires.
 class DataTypes(IntEnum):
-    Float = 0
-    Int = 1
-    String = 2
-    Bool = 3
-    Array = 4
+    Any = 0
+
+    Float = 1
+    Int = 2
+    String = 3
+    Bool = 4
+    Array = 5
     ## This type represents Execution pins.
     # It doesn't carry any data, but it implements [call](@ref PyFlow.Pins.ExecPin.ExecPin#call) method.
     # Using pins of this type we can control execution flow of graph.
-    Exec = 5
+    Exec = 6
     ## Special type of data which represents value passed by reference using [IMPLEMENT_NODE](@ref PyFlow.Core.FunctionLibrary.IMPLEMENT_NODE) decorator.
     # For example see [factorial](@ref FunctionLibraries.MathLib.MathLib.factorial) function.
     # Here along with computation results we return additional info, whether function call succeeded or not.
-    Reference = 6
-    FloatVector3 = 7
-    FloatVector4 = 8
-    Matrix33 = 9
-    Matrix44 = 10
-    Quaternion = 11
-    Enum = 12
+    Reference = 7
+    FloatVector3 = 8
+    FloatVector4 = 9
+    Matrix33 = 10
+    Matrix44 = 11
+    Quaternion = 12
+    Enum = 13
+    
+    
+def registerDatatype(name):
+    if name not in [x.name for x in DataTypes]:
+        extend_enum(DataTypes,name,getNewDataTypeIndex())
+    else:
+        print Exception("Error registering DataTypes type with Name {0} ,already registered".format(name))
 
+def getNewDataTypeIndex():
+    return  max([x.value for x in DataTypes])+1
 
 ## Returns string representation of the data type identifier
 # See [DataTypes](@ref PyFlow.Core.AGraphCommon.DataTypes)

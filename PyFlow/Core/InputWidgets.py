@@ -15,10 +15,10 @@ from Qt.QtWidgets import QHBoxLayout
 from Qt.QtWidgets import QSizePolicy
 from AGraphCommon import *
 from AbstractGraph import PinBase
-from .. import FloatVector3InputWidget_ui
-from .. import FloatVector4InputWidget_ui
-from .. import Matrix33InputWidget_ui
-from .. import Matrix44InputWidget_ui
+from ..Ui import FloatVector3InputWidget_ui
+from ..Ui import FloatVector4InputWidget_ui
+from ..Ui import Matrix33InputWidget_ui
+from ..Ui import Matrix44InputWidget_ui
 import pyrr
 
 
@@ -97,7 +97,9 @@ class ExecInputWidget(InputWidgetSingle):
         self.setWidget(self.pb)
         self.pb.clicked.connect(self.dataSetCallback)
         self.pbReset.deleteLater()
-
+    def setObjectName(self,name):
+        super(ExecInputWidget, self).setObjectName(name)
+        self.pb.setText(name.split(".")[-1])
 
 class EnumInputWidget(InputWidgetSingle):
     """
@@ -147,6 +149,21 @@ class IntInputWidget(InputWidgetSingle):
     def setWidgetValue(self, val):
         self.sb.setValue(int(val))
 
+
+class NoneInputWidget(InputWidgetSingle):
+    """
+    String data input widget
+    """
+    def __init__(self, parent=None, **kwds):
+        super(NoneInputWidget, self).__init__(parent=parent, **kwds)
+        self.le = QLineEdit(self)
+        self.le.setContextMenuPolicy(QtCore.Qt.NoContextMenu)
+        self.setWidget(self.le)
+        self.le.textChanged.connect(lambda val: self.dataSetCallback(val))
+        self.le.setEnabled(False)
+
+    def setWidgetValue(self, val):
+        self.le.setText(str(val))
 
 class StringInputWidget(InputWidgetSingle):
     """
@@ -562,4 +579,5 @@ def getInputWidget(dataType, dataSetter, defaultValue, userStructClass):
         return ExecInputWidget(dataSetCallback=dataSetter, defaultValue=None)
     if dataType == DataTypes.Enum:
         return EnumInputWidget(dataSetCallback=dataSetter, defaultValue=defaultValue, userStructClass=userStructClass)
-    return None
+      
+    return NoneInputWidget(dataSetCallback=dataSetter, defaultValue=defaultValue)

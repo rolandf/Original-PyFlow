@@ -144,4 +144,19 @@ class Ui_CodeEditorWidget(object):
         self.pbReset.setText(QtCompat.translate("CodeEditorWidget", "reset", None, -1))
         self.pbSave.setText(QtCompat.translate("CodeEditorWidget", "save", None, -1))
 
-import nodes_res_rc
+from .. import nodes_res_rc
+if __name__ == '__main__':
+    from Qt.QtWidgets import QApplication,QStyleFactory
+    import sys
+
+
+
+    app = QApplication(sys.argv)
+
+    app.setStyle(QStyleFactory.create("plastique"))
+    wm = QtWidgets.QDialog()
+    w = Ui_CodeEditorWidget()
+    w.setupUi(wm)
+    wm.show()
+
+    sys.exit(app.exec_())
