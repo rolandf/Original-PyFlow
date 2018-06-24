@@ -55,9 +55,6 @@ Connect and execute pins from property view or using timer node.
 See source code. **FunctionLibraries** folder for annotated nodes, **Nodes** folder for
 class based nodes. **Pins**, for data types and **Commands** for editor commands.
 
-# Donate
-[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/ILunin)
-
 # Licensing
 The MIT License (MIT)
 
