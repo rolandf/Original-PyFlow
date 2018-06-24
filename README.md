@@ -3,6 +3,7 @@
   <img src="PyFlow/resources/PyFlow.jpg">
 </p>
 
+**Original Repository** https://github.com/IlgarLunin/PyFlow
 **PyFlow** is a general purpose runtime extendable python qt node editor.
 
 Watch [video](https://youtu.be/chnRrr1Qfj8)
@@ -21,8 +22,13 @@ Watch [video](https://youtu.be/chnRrr1Qfj8)
 - Undo stack
 - Properties view
 - Dirty propagation for optimal graph computation
-- Runtime nodes creation
+- Runtime nodes creation and export
 - Variables
+- Runtime Subgraph creation and export
+- Collapsible Comment Nodes
+- Dynamic constraining Port Type
+- Copy/Paste + Alt+Drag->Clone
+
 
 # Installation
 1. Download repository.
